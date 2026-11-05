@@ -85,15 +85,11 @@ slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2:
 slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en vivo — Música en zumbador, OLED activa y luces encendidas (1.png)")
 
 # ---------------------------------------------------------
-# Luminous Theme & Drawer
+# Luminous Theme & Styling
 # ---------------------------------------------------------
 magical_theme = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&display=swap');
-
-[data-testid="stAppViewContainer"], section.main {{
-    scroll-behavior: smooth !important;
-}}
 
 header[data-testid="stHeader"] {{
     background: transparent !important;
@@ -169,11 +165,11 @@ div:has(> iframe[src*="wokwi.com"]),
     transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }}
 
-.companion-box-active {{
-    outline: 3px solid var(--highlight-color, #38bdf8) !important;
-    box-shadow: 0 0 40px var(--highlight-color, #38bdf8), 0 0 70px rgba(192, 132, 252, 0.35) !important;
-    transform: scale(1.01) !important;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+/* Theatrical Illuminated Frame */
+.companion-frame-active {{
+    box-shadow: 0 0 0 2px var(--highlight-color, #38bdf8), 0 0 35px var(--highlight-color, #38bdf8), 0 0 65px rgba(192, 132, 252, 0.35) !important;
+    border-radius: 14px !important;
+    transition: box-shadow 0.25s ease, transform 0.25s ease !important;
 }}
 
 .story-card {{
@@ -379,7 +375,7 @@ div.stButton > button {{
 
 .companion-link {{
     display: inline-block;
-    padding: 3px 10px;
+    padding: 4px 11px;
     margin: 3px 2px;
     border-radius: 6px;
     font-size: 0.82rem;
@@ -584,6 +580,7 @@ def render_ambiente_1():
 
     with col_draw:
         current_chapter_num = len(st.session_state.story_chapters) + 1
+        st.markdown('<div id="companion-anchor-canvas"></div>', unsafe_allow_html=True)
         st.markdown(f"##### Lienzo de Captura Gestual &bull; *Capítulo {current_chapter_num}*")
         st.caption("Junta el índice y el pulgar (pinza) para dibujar en el aire.")
         canvas_output = air_canvas(default=None, key="air_canvas_ui")
@@ -735,6 +732,7 @@ def render_ambiente_1():
             st.error(f"Error al generar historia: {err}")
 
     with col_stage:
+        st.markdown('<div id="companion-anchor-stage"></div>', unsafe_allow_html=True)
         col_st_title, col_btns = st.columns([0.55, 0.45])
         with col_st_title:
             st.markdown("##### Escenario Mecatrónico en Vivo")
@@ -788,7 +786,7 @@ def render_ambiente_1():
         if st.session_state.story_chapters:
             latest = st.session_state.story_chapters[-1]
             st.markdown(f"""
-            <div class="story-card">
+            <div class="story-card" id="target-story-box">
               <div>
                 <span class="chapter-badge">Capítulo {latest['num']} &bull; {latest['entity']}</span>
                 <span class="music-badge">Partitura: {latest.get('score_title', 'Melodía')} ({latest.get('score_mood', 'Expresivo')})</span>
@@ -802,7 +800,7 @@ def render_ambiente_1():
                 st.audio(st.session_state.current_audio, format="audio/mp3", autoplay=True)
         else:
             st.markdown("""
-            <div class="story-card" style="text-align: center; padding: 22px;">
+            <div class="story-card" id="target-story-box" style="text-align: center; padding: 22px;">
               <div style="color: #cbd5e1; font-weight: 500; font-size: 1rem;">El teatro se encuentra en reposo</div>
               <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Dibuja la primera criatura o elemento para abrir el telón y componer la partitura.</div>
             </div>
@@ -917,24 +915,27 @@ if show_amb2:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Reliable Injected Companion Controller with Smooth Scrolling
+# High-Fidelity Theatrical Auto-Scroll, Frame & Stardust
 # ---------------------------------------------------------
 companion_client_script = """
 (function() {
     var doc = window.parent.document;
+    var win = window.parent;
 
     function findTarget(key) {
         if (key === 'canvas') {
-            return doc.querySelector('div:has(> iframe[title*="air_canvas"])') ||
-                   doc.querySelector('[data-testid="element-container"]:has(iframe[title*="air_canvas"])') ||
-                   doc.querySelector('[data-testid="stColumn"]:first-child');
+            var anchor = doc.getElementById('companion-anchor-canvas');
+            if (anchor) return anchor.closest('[data-testid="stColumn"]') || anchor.parentElement;
+            return doc.querySelector('[data-testid="stColumn"]:first-child');
         }
         if (key === 'stage') {
-            return doc.querySelector('div:has(> iframe[src*="wokwi.com"])') ||
-                   doc.querySelector('[data-testid="element-container"]:has(iframe[src*="wokwi.com"])');
+            var anchor = doc.getElementById('companion-anchor-stage');
+            if (anchor) return anchor.closest('[data-testid="stColumn"]') || anchor.parentElement;
+            var ifr = doc.querySelector('iframe[src*="wokwi.com"]');
+            return ifr ? (ifr.closest('[data-testid="element-container"]') || ifr) : null;
         }
         if (key === 'story') {
-            return doc.querySelector('.story-card');
+            return doc.getElementById('target-story-box') || doc.querySelector('.story-card');
         }
         if (key === 'telemetry') {
             return doc.getElementById('target-telemetry-box') || doc.getElementById('ambience-2-wrapper');
@@ -942,21 +943,69 @@ companion_client_script = """
         return null;
     }
 
-    function smoothScrollTo(element) {
+    // Dynamic scroll container discovery
+    function getScrollContainer() {
+        var appView = doc.querySelector('[data-testid="stAppViewContainer"]');
+        if (appView && appView.scrollHeight > appView.clientHeight) return appView;
+        var mainSec = doc.querySelector('section.main');
+        if (mainSec && mainSec.scrollHeight > mainSec.clientHeight) return mainSec;
+        return win;
+    }
+
+    var scrollAnimId = null;
+    function smoothScrollCenter(element, duration) {
         if (!element) return;
-        var container = doc.querySelector('[data-testid="stAppViewContainer"]') || 
-                        doc.querySelector('section.main') || 
-                        doc.scrollingElement || 
-                        doc.documentElement;
+        if (scrollAnimId) {
+            cancelAnimationFrame(scrollAnimId);
+            scrollAnimId = null;
+        }
+        duration = duration || 680;
 
-        var cRect = container.getBoundingClientRect();
-        var eRect = element.getBoundingClientRect();
-        var targetTop = (eRect.top - cRect.top) + container.scrollTop - (container.clientHeight / 2) + (eRect.height / 2);
+        var container = getScrollContainer();
+        var isWindow = (container === win);
 
-        container.scrollTo({
-            top: Math.max(0, targetTop),
-            behavior: 'smooth'
-        });
+        var startScroll = isWindow ? (win.scrollY || win.pageYOffset) : container.scrollTop;
+        var rect = element.getBoundingClientRect();
+        var viewportHeight = win.innerHeight;
+        
+        // Exact delta required to center the element
+        var delta = (rect.top + rect.height / 2) - (viewportHeight / 2);
+
+        if (Math.abs(delta) < 18) return;
+
+        var maxScroll = isWindow ? 
+            (doc.documentElement.scrollHeight - viewportHeight) : 
+            (container.scrollHeight - container.clientHeight);
+
+        var targetScroll = Math.max(0, Math.min(startScroll + delta, maxScroll));
+        var distance = targetScroll - startScroll;
+        if (Math.abs(distance) < 4) return;
+
+        var startTime = performance.now();
+
+        function easeOutCubic(t) {
+            return (--t) * t * t + 1;
+        }
+
+        function step(now) {
+            var elapsed = now - startTime;
+            var progress = Math.min(elapsed / duration, 1);
+            var ease = easeOutCubic(progress);
+            var currentPos = startScroll + distance * ease;
+
+            if (isWindow) {
+                win.scrollTo(0, currentPos);
+            } else {
+                container.scrollTop = currentPos;
+            }
+
+            if (progress < 1) {
+                scrollAnimId = requestAnimationFrame(step);
+            } else {
+                scrollAnimId = null;
+            }
+        }
+        scrollAnimId = requestAnimationFrame(step);
     }
 
     function initCanvas() {
@@ -972,89 +1021,231 @@ companion_client_script = """
 
     var canvas = initCanvas();
     var ctx = canvas.getContext('2d');
+    var dpr = win.devicePixelRatio || 1;
+
     function resize() {
-        canvas.width = window.parent.innerWidth;
-        canvas.height = window.parent.innerHeight;
+        dpr = win.devicePixelRatio || 1;
+        canvas.width = win.innerWidth * dpr;
+        canvas.height = win.innerHeight * dpr;
+        canvas.style.width = win.innerWidth + 'px';
+        canvas.style.height = win.innerHeight + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     resize();
-    window.parent.addEventListener('resize', resize);
+    win.addEventListener('resize', resize);
 
     var particles = [];
+    var impacts = [];
     var isHover = false;
     var currentBadge = null;
     var currentTarget = null;
     var currentHex = '#38bdf8';
     var animFrame = null;
 
-    function spawn() {
+    function spawnStardust() {
         if (!isHover || !currentBadge || !currentTarget) return;
-        var rA = currentBadge.getBoundingClientRect();
-        var rB = currentTarget.getBoundingClientRect();
-        var x0 = rA.left;
-        var y0 = rA.top + rA.height / 2;
-        var x1 = rB.right;
-        var y1 = rB.top + rB.height / 2;
-        var cx = (x0 + x1) / 2;
-        var cy = Math.min(y0, y1) - 60;
-
-        for (var i = 0; i < 3; i++) {
+        
+        for (var i = 0; i < 2; i++) {
             particles.push({
-                x0: x0, y0: y0, x1: x1, y1: y1, cx: cx, cy: cy,
-                t: 0, speed: 0.024 + Math.random() * 0.02,
-                size: 2.2 + Math.random() * 3.2,
-                wobble: (Math.random() - 0.5) * 14,
-                color: currentHex
+                t: 0,
+                speed: 0.020 + Math.random() * 0.016,
+                size: 1.6 + Math.random() * 2.8,
+                arcOffset: (Math.random() - 0.5) * 80,
+                targetYRatio: 0.15 + Math.random() * 0.7,
+                wobbleAmp: 4 + Math.random() * 10,
+                wobbleFreq: 2 + Math.random() * 3,
+                phase: Math.random() * Math.PI * 2,
+                color: Math.random() > 0.3 ? currentHex : '#ffffff',
+                isStar: Math.random() > 0.55
             });
         }
     }
 
-    function loop() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        spawn();
+    function drawTheatricalFrame(rect, hex) {
+        var p = 7;
+        var bx = rect.left - p;
+        var by = rect.top - p;
+        var bw = rect.width + p * 2;
+        var bh = rect.height + p * 2;
 
-        if (isHover && currentTarget) {
-            var r = currentTarget.getBoundingClientRect();
-            var p = 6;
-            var bx = r.left - p, by = r.top - p, bw = r.width + p * 2, bh = r.height + p * 2;
+        if (bw <= 0 || bh <= 0) return;
 
-            ctx.save();
-            ctx.strokeStyle = currentHex;
-            ctx.lineWidth = 3.5;
-            ctx.shadowColor = currentHex;
-            ctx.shadowBlur = 24;
-            if (ctx.roundRect) {
-                ctx.beginPath();
-                ctx.roundRect(bx, by, bw, bh, 14);
-                ctx.stroke();
-            } else {
-                ctx.strokeRect(bx, by, bw, bh);
-            }
-            ctx.restore();
+        ctx.save();
+        
+        // 1. Luminous perimeter beam
+        var pulse = 0.45 + 0.25 * Math.sin(Date.now() / 240);
+        ctx.strokeStyle = hex;
+        ctx.globalAlpha = pulse;
+        ctx.lineWidth = 1.8;
+        ctx.shadowColor = hex;
+        ctx.shadowBlur = 18;
+        if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(bx, by, bw, bh, 12);
+            ctx.stroke();
+        } else {
+            ctx.strokeRect(bx, by, bw, bh);
         }
 
+        // 2. High-Tech Corner Brackets (L-shaped)
+        var cornerLen = Math.min(22, bw / 4, bh / 4);
+        ctx.globalAlpha = 0.95;
+        ctx.lineWidth = 3.5;
+        ctx.shadowBlur = 24;
+
+        // Top-Left
+        ctx.beginPath();
+        ctx.moveTo(bx, by + cornerLen);
+        ctx.lineTo(bx, by);
+        ctx.lineTo(bx + cornerLen, by);
+        ctx.stroke();
+
+        // Top-Right
+        ctx.beginPath();
+        ctx.moveTo(bx + bw - cornerLen, by);
+        ctx.lineTo(bx + bw, by);
+        ctx.lineTo(bx + bw, by + cornerLen);
+        ctx.stroke();
+
+        // Bottom-Right
+        ctx.beginPath();
+        ctx.moveTo(bx + bw, by + bh - cornerLen);
+        ctx.lineTo(bx + bw, by + bh);
+        ctx.lineTo(bx + bw - cornerLen, by + bh);
+        ctx.stroke();
+
+        // Bottom-Left
+        ctx.beginPath();
+        ctx.moveTo(bx + cornerLen, by + bh);
+        ctx.lineTo(bx, by + bh);
+        ctx.lineTo(bx, by + bh - cornerLen);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    function drawTwinkleStar(cx, cy, radius, color, alpha) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        for (var i = 0; i < 4; i++) {
+            var a = (i * Math.PI) / 2;
+            var x1 = cx + Math.cos(a) * radius;
+            var y1 = cy + Math.sin(a) * radius;
+            var aMid = a + Math.PI / 4;
+            var xMid = cx + Math.cos(aMid) * (radius * 0.32);
+            var yMid = cy + Math.sin(aMid) * (radius * 0.32);
+            if (i === 0) ctx.moveTo(x1, y1);
+            else ctx.lineTo(x1, y1);
+            ctx.lineTo(xMid, yMid);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function loop() {
+        ctx.clearRect(0, 0, win.innerWidth, win.innerHeight);
+
+        // Track live coordinates during scroll
+        if (currentTarget) {
+            var targetRect = currentTarget.getBoundingClientRect();
+            if (isHover) {
+                drawTheatricalFrame(targetRect, currentHex);
+                spawnStardust();
+            }
+        }
+
+        var badgeRect = currentBadge ? currentBadge.getBoundingClientRect() : null;
+
+        // Render In-Flight Stardust Particles
         for (var j = particles.length - 1; j >= 0; j--) {
             var pt = particles[j];
             pt.t += pt.speed;
-            if (pt.t >= 1) { particles.splice(j, 1); continue; }
+
+            if (pt.t >= 1) {
+                // Splash sparkle impact on target frame
+                if (currentTarget) {
+                    var tr = currentTarget.getBoundingClientRect();
+                    impacts.push({
+                        x: tr.right + 2,
+                        y: tr.top + tr.height * pt.targetYRatio,
+                        radius: 2 + Math.random() * 4,
+                        life: 1.0,
+                        decay: 0.045,
+                        color: pt.color
+                    });
+                }
+                particles.splice(j, 1);
+                continue;
+            }
+
+            if (!badgeRect || !currentTarget) {
+                particles.splice(j, 1);
+                continue;
+            }
+
+            var tRect = currentTarget.getBoundingClientRect();
+
+            // Real-time tracking start and end points
+            var x0 = badgeRect.left - 4;
+            var y0 = badgeRect.top + badgeRect.height / 2;
+            var x1 = tRect.right + 6;
+            var y1 = tRect.top + tRect.height * pt.targetYRatio;
+
+            // Arched celestial curve
+            var cx = (x0 + x1) / 2;
+            var cy = Math.min(y0, y1) - 60 + pt.arcOffset;
 
             var invT = 1 - pt.t;
-            var curX = invT * invT * pt.x0 + 2 * invT * pt.t * pt.cx + pt.t * pt.t * pt.x1;
-            var curY = invT * invT * pt.y0 + 2 * invT * pt.t * pt.cy + pt.t * pt.t * pt.y1;
-            curY += Math.sin(pt.t * Math.PI * 4) * pt.wobble;
+            var curX = invT * invT * x0 + 2 * invT * pt.t * cx + pt.t * pt.t * x1;
+            var curY = invT * invT * y0 + 2 * invT * pt.t * cy + pt.t * pt.t * y1;
 
-            var alpha = pt.t < 0.2 ? pt.t / 0.2 : (1 - pt.t);
+            // Harmonic orbital stardust wobble
+            curY += Math.sin(pt.t * Math.PI * pt.wobbleFreq + pt.phase) * pt.wobbleAmp;
+            curX += Math.cos(pt.t * Math.PI * 2 + pt.phase) * (pt.wobbleAmp * 0.35);
+
+            var alpha = pt.t < 0.2 ? (pt.t / 0.2) : (1 - pt.t);
+
+            if (pt.isStar) {
+                drawTwinkleStar(curX, curY, pt.size * 1.5, pt.color, alpha);
+            } else {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(curX, curY, pt.size, 0, Math.PI * 2);
+                ctx.fillStyle = pt.color;
+                ctx.shadowColor = pt.color;
+                ctx.shadowBlur = 12;
+                ctx.globalAlpha = alpha;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Render Impact Sparks on Frame
+        for (var k = impacts.length - 1; k >= 0; k--) {
+            var imp = impacts[k];
+            imp.life -= imp.decay;
+            if (imp.life <= 0) {
+                impacts.splice(k, 1);
+                continue;
+            }
             ctx.save();
             ctx.beginPath();
-            ctx.arc(curX, curY, pt.size * (1 - pt.t * 0.35), 0, 2 * Math.PI);
-            ctx.fillStyle = pt.color;
-            ctx.shadowColor = pt.color;
-            ctx.shadowBlur = 12;
-            ctx.globalAlpha = alpha;
-            ctx.fill();
+            ctx.arc(imp.x, imp.y, imp.radius * (2 - imp.life), 0, Math.PI * 2);
+            ctx.strokeStyle = imp.color;
+            ctx.shadowColor = imp.color;
+            ctx.shadowBlur = 14;
+            ctx.globalAlpha = imp.life;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
             ctx.restore();
         }
 
-        if (particles.length > 0 || isHover) {
+        if (particles.length > 0 || impacts.length > 0 || isHover) {
             animFrame = requestAnimationFrame(loop);
         } else {
             animFrame = null;
@@ -1083,15 +1274,16 @@ companion_client_script = """
                     currentHex = colorHex;
 
                     targetNode.style.setProperty('--highlight-color', colorHex);
-                    targetNode.classList.add('companion-box-active');
-                    smoothScrollTo(targetNode);
+                    targetNode.classList.add('companion-frame-active');
+                    
+                    smoothScrollCenter(targetNode, 680);
                     startLoop();
                 }
             });
 
             b.addEventListener('mouseleave', function() {
                 isHover = false;
-                if (currentTarget) currentTarget.classList.remove('companion-box-active');
+                if (currentTarget) currentTarget.classList.remove('companion-frame-active');
                 currentTarget = null;
                 currentBadge = null;
             });
@@ -1102,21 +1294,27 @@ companion_client_script = """
                 if (!targetNode && targetKey === 'telemetry') {
                     var labels = Array.from(doc.querySelectorAll('[data-testid="stRadio"] label'));
                     var targetLabel = labels.find(function(l) { 
-                        return l.textContent.indexOf('Ambiente 2') !== -1 || l.textContent.indexOf('Vista Dual') !== -1; 
+                        return l.textContent.indexOf('Vista Dual') !== -1 || l.textContent.indexOf('Ambiente 2') !== -1; 
                     });
-                    if (targetLabel) targetLabel.click();
+                    if (targetLabel) {
+                        targetLabel.click();
+                        setTimeout(function() {
+                            var tNode = findTarget('telemetry');
+                            if (tNode) smoothScrollCenter(tNode, 680);
+                        }, 220);
+                    }
                 } else if (targetNode) {
-                    smoothScrollTo(targetNode);
+                    smoothScrollCenter(targetNode, 680);
                 }
             });
         });
     }
 
-    setInterval(bindLinks, 600);
+    setInterval(bindLinks, 550);
 })();
 """
 
-# Native, safe iframe injection with duplicate guard
+# Native, safe iframe injection with duplicate script guard
 components.html(f"""
 <!DOCTYPE html>
 <html>
