@@ -84,7 +84,7 @@ slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2:
 slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en vivo — Música en zumbador, OLED activa y luces encendidas (1.png)")
 
 # ---------------------------------------------------------
-# Luminous Theme & Pure CSS Drawer (Flush-Left HTML)
+# Luminous Theme & PURE CSS Companion Highlighting
 # ---------------------------------------------------------
 magical_theme = f"""
 <style>
@@ -147,14 +147,160 @@ html, body, [data-testid="stAppViewContainer"] {{
     margin-top: 2px;
 }}
 
-.companion-target-highlight {{
-    outline: 3.5px solid var(--highlight-color, #38bdf8) !important;
-    box-shadow: 0 0 45px var(--highlight-color, #38bdf8), 0 0 80px rgba(192, 132, 252, 0.4) !important;
-    border-radius: 16px !important;
+/* ------------------------------------------------------------- */
+/* PURE CSS COMPANION HIGHLIGHTING & FLOATING BEACONS            */
+/* ------------------------------------------------------------- */
+#target-canvas-box, #target-stage-box, #target-story-box, #target-telemetry-box {{
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    transform: scale(1.012) !important;
 }}
 
+/* Target Glow Animations */
+@keyframes targetNeonPulse {{
+    0%, 100% {{
+        filter: drop-shadow(0 0 18px var(--beacon-glow, #38bdf8));
+    }}
+    50% {{
+        filter: drop-shadow(0 0 35px var(--beacon-glow, #38bdf8)) drop-shadow(0 0 60px rgba(192, 132, 252, 0.5));
+    }}
+}}
+
+/* 1. Canvas Highlighter */
+body:has(.hl-canvas:hover) #target-canvas-box {{
+    --beacon-glow: #38bdf8;
+    outline: 3.5px solid #38bdf8 !important;
+    box-shadow: 0 0 45px rgba(56, 189, 248, 0.85), 0 0 80px rgba(192, 132, 252, 0.4) !important;
+    transform: scale(1.012) !important;
+    border-radius: 16px !important;
+    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
+    z-index: 50 !important;
+}}
+body:has(.hl-canvas:hover) #target-canvas-box::after {{
+    content: "🪞 Lienzo Gestual (MediaPipe 60 FPS) Enfocado";
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(56, 189, 248, 0.95);
+    color: #031c26;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    z-index: 100;
+    box-shadow: 0 0 20px #38bdf8;
+}}
+
+/* 2. Curtains Highlighter */
+body:has(.hl-curtains:hover) #target-stage-box {{
+    --beacon-glow: #f43f5e;
+    outline: 3.5px solid #f43f5e !important;
+    box-shadow: 0 0 50px rgba(244, 63, 94, 0.85), 0 0 80px rgba(244, 63, 94, 0.4) !important;
+    transform: scale(1.012) !important;
+    border-radius: 16px !important;
+    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
+    z-index: 50 !important;
+}}
+body:has(.hl-curtains:hover) #target-stage-box::after {{
+    content: "🎭 Telones Izq (13) & Der (25) Enfocados";
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(244, 63, 94, 0.95);
+    color: #ffffff;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    z-index: 100;
+    box-shadow: 0 0 20px #f43f5e;
+}}
+
+/* 3. Prop Lift Highlighter */
+body:has(.hl-prop:hover) #target-stage-box {{
+    --beacon-glow: #fbbf24;
+    outline: 3.5px solid #fbbf24 !important;
+    box-shadow: 0 0 50px rgba(251, 191, 36, 0.85), 0 0 80px rgba(251, 191, 36, 0.4) !important;
+    transform: scale(1.012) !important;
+    border-radius: 16px !important;
+    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
+    z-index: 50 !important;
+}}
+body:has(.hl-prop:hover) #target-stage-box::after {{
+    content: "🚀 Elevador de Atrezo (Pin 14) Enfocado";
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(251, 191, 36, 0.95);
+    color: #171100;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    z-index: 100;
+    box-shadow: 0 0 20px #fbbf24;
+}}
+
+/* 4. Wind Machine Highlighter */
+body:has(.hl-wind:hover) #target-stage-box {{
+    --beacon-glow: #38bdf8;
+    outline: 3.5px solid #38bdf8 !important;
+    box-shadow: 0 0 50px rgba(56, 189, 248, 0.85), 0 0 80px rgba(56, 189, 248, 0.4) !important;
+    transform: scale(1.012) !important;
+    border-radius: 16px !important;
+    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
+    z-index: 50 !important;
+}}
+body:has(.hl-wind:hover) #target-stage-box::after {{
+    content: "🌪️ Máquina de Viento (Pin 27) Enfocada";
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(56, 189, 248, 0.95);
+    color: #031c26;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    z-index: 100;
+    box-shadow: 0 0 20px #38bdf8;
+}}
+
+/* 5. Story Card Highlighter */
+body:has(.hl-story:hover) #target-story-box {{
+    --beacon-glow: #c084fc;
+    outline: 3.5px solid #c084fc !important;
+    box-shadow: 0 0 50px rgba(192, 132, 252, 0.9), 0 0 80px rgba(192, 132, 252, 0.4) !important;
+    transform: scale(1.012) !important;
+    border-radius: 16px !important;
+    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
+    z-index: 50 !important;
+}}
+body:has(.hl-story:hover) #target-story-box::after {{
+    content: "🔮 Narrativa & Voz HD (tts-1-hd) Enfocada";
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: rgba(192, 132, 252, 0.95);
+    color: #17042a;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    z-index: 100;
+    box-shadow: 0 0 20px #c084fc;
+}}
+
+/* 6. Telemetry Monitor Highlighter */
+body:has(.hl-telemetry:hover) #target-telemetry-box {{
+    --beacon-glow: #38bdf8;
+    outline: 3.5px solid #38bdf8 !important;
+    box-shadow: 0 0 50px rgba(56, 189, 248, 0.85) !important;
+    transform: scale(1.012) !important;
+    border-radius: 12px !important;
+    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
+    z-index: 50 !important;
+}}
+
+/* Story Card */
 .story-card {{
     background: rgba(26, 20, 56, 0.65);
     border: 1px solid rgba(192, 132, 252, 0.3);
@@ -201,6 +347,7 @@ html, body, [data-testid="stAppViewContainer"] {{
     margin-top: 6px;
 }}
 
+/* Stage Box */
 .stage-box {{
     position: relative;
     border-radius: 16px;
@@ -317,7 +464,7 @@ div.stButton > button {{
 .drawer-backdrop {{
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(5, 4, 13, 0.15) !important;
+    background: rgba(5, 4, 13, 0.18) !important;
     backdrop-filter: none !important;
     z-index: 9999999 !important;
     opacity: 0;
@@ -393,7 +540,7 @@ div.stButton > button {{
 
 .companion-link {{
     display: inline-block;
-    padding: 2px 9px;
+    padding: 3px 10px;
     margin: 3px 2px;
     border-radius: 6px;
     font-size: 0.82rem;
@@ -422,7 +569,7 @@ div.stButton > button {{
     border: 1px solid rgba(192, 132, 252, 0.45);
 }}
 .companion-link:hover {{
-    transform: translateY(-1px) scale(1.05);
+    transform: translateX(-3px) scale(1.05);
     filter: brightness(1.2);
 }}
 
@@ -465,20 +612,20 @@ div.stButton > button {{
 </ul>
 <div class="drawer-section-title">⚙️ ¿Cómo funciona?</div>
 <ol style="padding-left:18px;margin-top:4px;">
-<li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan" data-target="canvas" data-color="#38bdf8">🔍 Resaltar Lienzo de Dibujo</span></li>
+<li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan hl-canvas">🔍 Resaltar Lienzo de Dibujo</span></li>
 {slot_img_4}
-<li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple" data-target="story" data-color="#c084fc">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
+<li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple hl-story">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
 {slot_img_3}
 <li style="margin-bottom:10px;"><b>El escenario cobra vida:</b><ul style="padding-left:16px;margin-top:4px;"><li>En tu pantalla, tu dibujo aparece recortado flotando y bailando sobre el escenario.</li><li>Por internet (vía MQTT), la placa ESP32 en Wokwi recibe la orden: abre los telones, enciende las luces del color del cuento, eleva al personaje y toca la melodía con su zumbador como una cajita de música.</li></ul></li>
-<li style="margin-bottom:10px;"><b>Telemetría de retorno bidireccional:</b> Al iniciar y finalizar cada acto, el ESP32 transmite de vuelta a Streamlit su estado físico, confirmando que la orden fue ejecutada en el circuito.<br><span class="companion-link cyan" data-target="telemetry" data-color="#38bdf8">📡 Resaltar Monitor de Telemetría</span></li>
+<li style="margin-bottom:10px;"><b>Telemetría de retorno bidireccional:</b> Al iniciar y finalizar cada acto, el ESP32 transmite de vuelta a Streamlit su estado físico, confirmando que la orden fue ejecutada en el circuito.<br><span class="companion-link cyan hl-telemetry">📡 Resaltar Monitor de Telemetría</span></li>
 </ol>
 <div class="drawer-section-title">🦾 ¿Qué hace cada servomotor exactamente?</div>
 <p>A continuación se observa el estado de reposo del teatro antes de que se inicie la obra:</p>
 {slot_img_2}
 <ul style="padding-left:18px;margin-top:4px;">
-<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red" data-target="stage" data-color="#f43f5e">🎭 Resaltar Telones en Escenario</span></li>
-<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold" data-target="stage" data-color="#fbbf24">🚀 Resaltar Elevador Mecánico</span></li>
-<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan" data-target="stage" data-color="#38bdf8">🌪️ Resaltar Máquina de Viento</span></li>
+<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red hl-curtains">🎭 Resaltar Telones en Escenario</span></li>
+<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold hl-prop">🚀 Resaltar Elevador Mecánico</span></li>
+<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan hl-wind">🌪️ Resaltar Máquina de Viento</span></li>
 </ul>
 <div class="drawer-section-title">💡 El resto del hardware en acción:</div>
 {slot_img_1}
@@ -487,159 +634,9 @@ div.stButton > button {{
 <li style="margin-bottom:6px;"><b>Pantalla OLED:</b> Muestra el título de la obra y el nombre de la partitura que está sonando.</li>
 <li style="margin-bottom:6px;"><b>Zumbador:</b> Toca la partitura que compuso la IA nota por nota a un volumen suave como cajita de música.</li>
 </ul>
-<div style="text-align:center;margin-top:25px;padding-top:15px;border-top:1px solid rgba(192,132,252,0.2);font-size:0.8rem;color:#94a3b8;">Pasa el mouse sobre los botones para lanzar partículas hacia cada elemento.</div>
+<div style="text-align:center;margin-top:25px;padding-top:15px;border-top:1px solid rgba(192,132,252,0.2);font-size:0.8rem;color:#94a3b8;">Pasa el mouse sobre los botones para resaltar cada componente y ver su etiqueta.</div>
 </div>
 </div>
-
-<!-- INYECCIÓN DIRECTA EN EL DOM PADRE (SIN BLOQUEO DE IFRAME) -->
-<img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>" 
-     style="display:none;" 
-     onerror="(function(){{
-        var doc = document;
-        
-        // 1. Crear canvas en el DOM principal
-        var canvas = doc.getElementById('companion-trail-canvas');
-        if (!canvas) {{
-            canvas = doc.createElement('canvas');
-            canvas.id = 'companion-trail-canvas';
-            canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999999;';
-            doc.body.appendChild(canvas);
-        }}
-        var ctx = canvas.getContext('2d');
-
-        function resize() {{
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }}
-        resize();
-        window.addEventListener('resize', resize);
-
-        var particles = [];
-        var isHovering = false;
-        var currentSource = null;
-        var currentTarget = null;
-        var currentColor = '#38bdf8';
-        var animId = null;
-
-        function getTarget(key) {{
-            if (key === 'canvas') return doc.getElementById('target-canvas-box') || doc.querySelector('[data-testid=\\"stColumn\\"]:first-child');
-            if (key === 'stage') return doc.getElementById('target-stage-box') || doc.querySelector('.stage-box');
-            if (key === 'story') return doc.getElementById('target-story-box') || doc.querySelector('.story-card');
-            if (key === 'telemetry') return doc.getElementById('target-telemetry-box');
-            return null;
-        }}
-
-        function spawn() {{
-            if (!isHovering || !currentSource || !currentTarget) return;
-            var rA = currentSource.getBoundingClientRect();
-            var rB = currentTarget.getBoundingClientRect();
-
-            var x0 = rA.left;
-            var y0 = rA.top + rA.height / 2;
-            var x1 = rB.right;
-            var y1 = rB.top + rB.height / 2;
-            var cx = (x0 + x1) / 2;
-            var cy = Math.min(y0, y1) - 60;
-
-            for (var i = 0; i < 3; i++) {{
-                particles.push({{
-                    x0: x0, y0: y0, x1: x1, y1: y1, cx: cx, cy: cy,
-                    t: 0, speed: 0.02 + Math.random() * 0.02,
-                    size: 2.2 + Math.random() * 3.5,
-                    wobble: (Math.random() - 0.5) * 16,
-                    color: currentColor
-                }});
-            }}
-        }}
-
-        function loop() {{
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            spawn();
-
-            if (isHovering && currentTarget) {{
-                var r = currentTarget.getBoundingClientRect();
-                var p = 6;
-                var bx = r.left - p, by = r.top - p, bw = r.width + p * 2, bh = r.height + p * 2;
-
-                ctx.save();
-                ctx.strokeStyle = currentColor;
-                ctx.lineWidth = 3.5;
-                ctx.shadowColor = currentColor;
-                ctx.shadowBlur = 24;
-                ctx.strokeRect(bx, by, bw, bh);
-
-                var len = 22;
-                ctx.lineWidth = 5;
-                ctx.beginPath();
-                ctx.moveTo(bx, by + len); ctx.lineTo(bx, by); ctx.lineTo(bx + len, by);
-                ctx.moveTo(bx + bw - len, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + len);
-                ctx.moveTo(bx, by + bh - len); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + len, by + bh);
-                ctx.moveTo(bx + bw - len, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - len);
-                ctx.stroke();
-                ctx.restore();
-            }}
-
-            for (var j = particles.length - 1; j >= 0; j--) {{
-                var pt = particles[j];
-                pt.t += pt.speed;
-                if (pt.t >= 1) {{ particles.splice(j, 1); continue; }}
-
-                var invT = 1 - pt.t;
-                var curX = invT * invT * pt.x0 + 2 * invT * pt.t * pt.cx + pt.t * pt.t * pt.x1;
-                var curY = invT * invT * pt.y0 + 2 * invT * pt.t * pt.cy + pt.t * pt.t * pt.y1;
-                curY += Math.sin(pt.t * Math.PI * 4) * pt.wobble;
-
-                var alpha = pt.t < 0.2 ? pt.t / 0.2 : (1 - pt.t);
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(curX, curY, pt.size * (1 - pt.t * 0.4), 0, 2 * Math.PI);
-                ctx.fillStyle = pt.color;
-                ctx.shadowColor = pt.color;
-                ctx.shadowBlur = 12;
-                ctx.globalAlpha = alpha;
-                ctx.fill();
-                ctx.restore();
-            }}
-
-            if (particles.length > 0 || isHovering) {{
-                animId = requestAnimationFrame(loop);
-            }} else {{
-                animId = null;
-            }}
-        }}
-
-        function bind() {{
-            var links = doc.querySelectorAll('.companion-link');
-            links.forEach(function(l) {{
-                if (l.dataset.bound) return;
-                l.dataset.bound = 'true';
-
-                l.addEventListener('mouseenter', function() {{
-                    var targetKey = l.getAttribute('data-target');
-                    var color = l.getAttribute('data-color') || '#38bdf8';
-                    var targetEl = getTarget(targetKey);
-
-                    if (targetEl) {{
-                        isHovering = true;
-                        currentSource = l;
-                        currentTarget = targetEl;
-                        currentColor = color;
-                        targetEl.style.setProperty('--highlight-color', color);
-                        targetEl.classList.add('companion-target-highlight');
-                        if (!animId) animId = requestAnimationFrame(loop);
-                    }}
-                }});
-
-                l.addEventListener('mouseleave', function() {{
-                    isHovering = false;
-                    if (currentTarget) currentTarget.classList.remove('companion-target-highlight');
-                    currentTarget = null;
-                    currentSource = null;
-                }});
-            }});
-        }}
-        setInterval(bind, 800);
-     }})()" />
 """
 st.markdown(magical_theme, unsafe_allow_html=True)
 
@@ -684,7 +681,7 @@ if "narrator_voice" not in st.session_state:
     st.session_state.narrator_voice = "coral"
 
 # ---------------------------------------------------------
-# Header & Navigation Switcher (Rubric A3: 2 Ambientes)
+# Header & Navigation Switcher
 # ---------------------------------------------------------
 st.markdown("""
 <div class="header-glow">
@@ -754,7 +751,7 @@ def render_ambiente_1():
     col_draw, col_stage = st.columns([1.0, 1.05], gap="large")
 
     with col_draw:
-        st.markdown('<div id="target-canvas-box">', unsafe_allow_html=True)
+        st.markdown('<div id="target-canvas-box" style="position:relative;">', unsafe_allow_html=True)
         current_chapter_num = len(st.session_state.story_chapters) + 1
         st.markdown(f"##### 🪞 El Espejo de Luz &bull; *Capítulo {current_chapter_num}*")
         st.caption("Pellizca el índice y el pulgar para pintar con polvo de estrellas.")
@@ -868,6 +865,7 @@ def render_ambiente_1():
                     clean_json = match.group(0) if match else raw_content.strip()
                     chapter_data = json.loads(clean_json)
 
+                    # High-Fidelity Voice Synthesis
                     story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
                     tts = client.audio.speech.create(
                         model="tts-1-hd",
@@ -946,7 +944,7 @@ def render_ambiente_1():
 
         st.caption("💡 *Asegúrate de pulsar el botón verde ▶️ (Play) dentro de Wokwi para encender el escenario.*")
 
-        st.markdown('<div class="stage-box" id="target-stage-box">', unsafe_allow_html=True)
+        st.markdown('<div class="stage-box" id="target-stage-box" style="position:relative;">', unsafe_allow_html=True)
         components.iframe(
             f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram&v={st.session_state.wokwi_session_token}",
             height=350
@@ -963,7 +961,7 @@ def render_ambiente_1():
         if st.session_state.story_chapters:
             latest = st.session_state.story_chapters[-1]
             st.markdown(f"""
-            <div class="story-card" id="target-story-box">
+            <div class="story-card" id="target-story-box" style="position:relative;">
               <div>
                 <span class="chapter-badge">Capítulo {latest['num']} &bull; {latest['entity']}</span>
                 <span class="music-badge">🎼 {latest.get('score_title', 'Partitura')} ({latest.get('score_mood', 'Mágico')})</span>
@@ -977,7 +975,7 @@ def render_ambiente_1():
                 st.audio(st.session_state.current_audio, format="audio/mp3", autoplay=True)
         else:
             st.markdown("""
-            <div class="story-card" id="target-story-box" style="text-align: center; padding: 24px;">
+            <div class="story-card" id="target-story-box" style="position:relative; text-align: center; padding: 24px;">
               <div style="font-size: 2rem; margin-bottom: 6px;">✨📜</div>
               <div style="color: #cbd5e1; font-weight: 500;">El teatro está en penumbra esperando la función</div>
               <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Dibuja la primera criatura o paisaje para abrir el telón y escuchar su música original.</div>
@@ -1049,7 +1047,7 @@ def render_ambiente_2():
 
         t_data = st.session_state.latest_telemetry
         st.markdown(f"""
-        <div id="target-telemetry-box" style="background: rgba(18, 14, 40, 0.8); border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 16px;">
+        <div id="target-telemetry-box" style="position:relative; background: rgba(18, 14, 40, 0.8); border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 16px;">
           <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
             <span style="font-weight:700; color:#38bdf8;">📡 DISPOSITIVO: {t_data.get('origen')}</span>
             <span style="color:#94a3b8; font-size:0.85rem;">Hora: {t_data.get('hora')}</span>
