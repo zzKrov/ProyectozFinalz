@@ -6,6 +6,7 @@ import json
 import time
 import socket
 import re
+import base64
 import os
 
 st.set_page_config(
@@ -16,28 +17,47 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Luminous Theme & Transparent Drawer (No Blur on Site)
+# Helper to Embed Images Safely in HTML
 # ---------------------------------------------------------
-magical_theme = """
+def render_report_image(filename, title, caption):
+    if os.path.exists(filename):
+        try:
+            with open(filename, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode()
+                return f"""<div class="image-slot"><img src="data:image/png;base64,{b64}" style="width:100%;border-radius:10px;border:1px solid rgba(192,132,252,0.4);display:block;"/><div class="image-slot-caption">{caption}</div></div>"""
+        except Exception:
+            pass
+    # Fallback placeholder if image file is not yet uploaded
+    return f"""<div class="image-slot"><div style="font-size:1.3rem;">🖼️ <b>{filename}</b></div><div style="font-weight:600;font-size:0.85rem;color:#cbd5e1;margin-top:4px;">{title}</div><div class="image-slot-caption">{caption}</div></div>"""
+
+slot_img_4 = render_report_image("4.png", "Trazado Gestual en el Aire", "Figura 4: Gesto de pinza y dibujo en el aire frente a la webcam")
+slot_img_3 = render_report_image("3.png", "Crónica de Capítulos Continuos", "Figura 3: Sección inferior de capítulos continuos e historia secuencial")
+slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2: Estado inicial del circuito Wokwi — Telones cerrados y reposo")
+slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en directo — Música en zumbador, texto OLED y luces encendidas")
+
+# ---------------------------------------------------------
+# Luminous Theme & Pure CSS Drawer (Flush-Left HTML)
+# ---------------------------------------------------------
+magical_theme = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&display=swap');
 
-header[data-testid="stHeader"] {
+header[data-testid="stHeader"] {{
     background: transparent !important;
     z-index: 10 !important;
-}
-[data-testid="collapsedControl"], section[data-testid="stSidebar"], #MainMenu, footer {
+}}
+[data-testid="collapsedControl"], section[data-testid="stSidebar"], #MainMenu, footer {{
     display: none !important;
-}
+}}
 
-html, body, [data-testid="stAppViewContainer"] {
+html, body, [data-testid="stAppViewContainer"] {{
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     background: radial-gradient(ellipse at 50% 0%, #171138 0%, #0a081a 60%, #05040d 100%) !important;
     color: #f1f5f9 !important;
     overflow-x: hidden;
-}
+}}
 
-.stars-overlay {
+.stars-overlay {{
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     pointer-events: none;
@@ -51,19 +71,19 @@ html, body, [data-testid="stAppViewContainer"] {
     background-size: 550px 550px;
     opacity: 0.35;
     animation: driftStars 80s linear infinite;
-}
-@keyframes driftStars {
-    from { transform: translateY(0); }
-    to { transform: translateY(-550px); }
-}
+}}
+@keyframes driftStars {{
+    from {{ transform: translateY(0); }}
+    to {{ transform: translateY(-550px); }}
+}}
 
-.header-glow {
+.header-glow {{
     text-align: center;
     padding: 8px 0 14px 0;
     margin-bottom: 18px;
     border-bottom: 1px solid rgba(192, 132, 252, 0.2);
-}
-.app-title {
+}}
+.app-title {{
     font-family: 'Playfair Display', serif;
     font-size: 2.2rem;
     font-weight: 600;
@@ -72,24 +92,14 @@ html, body, [data-testid="stAppViewContainer"] {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 0 20px rgba(192, 132, 252, 0.45));
-}
-.app-subtitle {
+}}
+.app-subtitle {{
     font-size: 0.92rem;
     color: #cbd5e1;
     margin-top: 2px;
-}
+}}
 
-/* Full Target Boxes Highlight Animations */
-.companion-target-highlight {
-    outline: 3.5px solid var(--highlight-color, #38bdf8) !important;
-    box-shadow: 0 0 45px var(--highlight-color, #38bdf8), 0 0 80px rgba(192, 132, 252, 0.4) !important;
-    border-radius: 16px !important;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    transform: scale(1.012) !important;
-}
-
-/* Story Card */
-.story-card {
+.story-card {{
     background: rgba(26, 20, 56, 0.65);
     border: 1px solid rgba(192, 132, 252, 0.3);
     box-shadow: 0 8px 32px 0 rgba(112, 0, 255, 0.22);
@@ -98,15 +108,15 @@ html, body, [data-testid="stAppViewContainer"] {
     padding: 16px 20px;
     margin-top: 8px;
     transition: all 0.3s ease;
-}
-.story-heading {
+}}
+.story-heading {{
     font-family: 'Playfair Display', serif;
     font-size: 1.25rem;
     font-weight: 600;
     color: #f8fafc;
     margin-bottom: 4px;
-}
-.chapter-badge {
+}}
+.chapter-badge {{
     display: inline-block;
     font-size: 0.72rem;
     font-weight: 600;
@@ -115,8 +125,8 @@ html, body, [data-testid="stAppViewContainer"] {
     background: rgba(56, 189, 248, 0.15);
     color: #38bdf8;
     border: 1px solid rgba(56, 189, 248, 0.35);
-}
-.music-badge {
+}}
+.music-badge {{
     display: inline-block;
     font-size: 0.72rem;
     font-weight: 600;
@@ -126,17 +136,16 @@ html, body, [data-testid="stAppViewContainer"] {
     color: #c084fc;
     border: 1px solid rgba(192, 132, 252, 0.35);
     margin-left: 6px;
-}
-.story-body {
+}}
+.story-body {{
     font-family: 'Playfair Display', serif;
     font-size: 1.05rem;
     line-height: 1.65;
     color: #e2e8f0;
     margin-top: 6px;
-}
+}}
 
-/* Stage Box */
-.stage-box {
+.stage-box {{
     position: relative;
     border-radius: 16px;
     overflow: hidden;
@@ -144,8 +153,8 @@ html, body, [data-testid="stAppViewContainer"] {
     box-shadow: 0 0 30px rgba(112, 0, 255, 0.2);
     background: #0d0a1f;
     transition: all 0.3s ease;
-}
-.hologram-overlay-container {
+}}
+.hologram-overlay-container {{
     position: relative;
     height: 0px;
     top: -240px;
@@ -154,37 +163,37 @@ html, body, [data-testid="stAppViewContainer"] {
     justify-content: center;
     align-items: center;
     z-index: 10;
-}
-@keyframes floatAura {
-    0%   { transform: translateY(0px) scale(1) rotate(0deg); }
-    50%  { transform: translateY(-14px) scale(1.06) rotate(3deg); }
-    100% { transform: translateY(0px) scale(1) rotate(0deg); }
-}
-.stage-cutout {
+}}
+@keyframes floatAura {{
+    0%   {{ transform: translateY(0px) scale(1) rotate(0deg); }}
+    50%  {{ transform: translateY(-14px) scale(1.06) rotate(3deg); }}
+    100% {{ transform: translateY(0px) scale(1) rotate(0deg); }}
+}}
+.stage-cutout {{
     max-height: 150px;
     max-width: 150px;
     object-fit: contain;
     animation: floatAura 6s infinite ease-in-out;
     filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 35px rgba(192, 132, 252, 0.7));
-}
+}}
 
-div.stButton > button {
+div.stButton > button {{
     background: rgba(30, 27, 75, 0.7) !important;
     color: #ede6de !important;
     border: 1px solid rgba(192, 132, 252, 0.3) !important;
     border-radius: 8px !important;
     font-size: 0.8rem !important;
     padding: 4px 12px !important;
-}
+}}
 
 /* ------------------------------------------------------------- */
-/* PURE CSS DRAWER (TRANSPARENT BACKDROP - NO SITE BLUR)         */
+/* PURE CSS DRAWER                                               */
 /* ------------------------------------------------------------- */
-.drawer-checkbox {
+.drawer-checkbox {{
     display: none !important;
-}
+}}
 
-.drawer-trigger-btn {
+.drawer-trigger-btn {{
     position: fixed;
     top: 14px;
     right: 20px;
@@ -205,14 +214,14 @@ div.stButton > button {
     align-items: center;
     gap: 8px;
     user-select: none;
-}
-.drawer-trigger-btn:hover {
+}}
+.drawer-trigger-btn:hover {{
     transform: translateY(-2px) scale(1.05);
     border-color: #38bdf8 !important;
     box-shadow: 0 0 35px rgba(56, 189, 248, 0.8) !important;
-}
+}}
 
-.drawer-inline-btn {
+.drawer-inline-btn {{
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -227,14 +236,14 @@ div.stButton > button {
     cursor: pointer;
     transition: all 0.2s;
     user-select: none;
-}
-.drawer-inline-btn:hover {
+}}
+.drawer-inline-btn:hover {{
     color: #38bdf8;
     border-color: #38bdf8;
     background: rgba(56, 189, 248, 0.15);
-}
+}}
 
-.drawer-panel {
+.drawer-panel {{
     position: fixed;
     top: 0;
     right: 0;
@@ -252,10 +261,9 @@ div.stButton > button {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-}
+}}
 
-/* Backdrop: Pure Clickable Shield with NO Blur and Minimal Tint */
-.drawer-backdrop {
+.drawer-backdrop {{
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
     background: rgba(5, 4, 13, 0.18) !important;
@@ -265,32 +273,32 @@ div.stButton > button {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
-}
+}}
 
-.drawer-checkbox:checked ~ .drawer-panel {
+.drawer-checkbox:checked ~ .drawer-panel {{
     transform: translateX(0) !important;
-}
-.drawer-checkbox:checked ~ .drawer-backdrop {
+}}
+.drawer-checkbox:checked ~ .drawer-backdrop {{
     opacity: 1 !important;
     pointer-events: auto !important;
-}
+}}
 
-.drawer-header {
+.drawer-header {{
     padding: 18px 22px;
     border-bottom: 1px solid rgba(192, 132, 252, 0.25);
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-.drawer-title {
+}}
+.drawer-title {{
     font-family: 'Playfair Display', serif;
     font-size: 1.35rem;
     font-weight: 600;
     background: linear-gradient(135deg, #fbcfe8, #38bdf8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-}
-.drawer-close-label {
+}}
+.drawer-close-label {{
     background: rgba(255, 255, 255, 0.08);
     color: #94a3b8;
     font-size: 1.2rem;
@@ -303,37 +311,37 @@ div.stButton > button {
     justify-content: center;
     transition: all 0.2s;
     user-select: none;
-}
-.drawer-close-label:hover {
+}}
+.drawer-close-label:hover {{
     color: #fff;
     background: rgba(244, 63, 94, 0.35);
-}
+}}
 
-.drawer-content {
+.drawer-content {{
     padding: 22px;
     overflow-y: auto;
     flex: 1;
     font-size: 0.92rem;
     line-height: 1.6;
     color: #e2e8f0;
-}
-.drawer-content::-webkit-scrollbar {
+}}
+.drawer-content::-webkit-scrollbar {{
     width: 6px;
-}
-.drawer-content::-webkit-scrollbar-thumb {
+}}
+.drawer-content::-webkit-scrollbar-thumb {{
     background: rgba(192, 132, 252, 0.25);
     border-radius: 10px;
-}
+}}
 
-.drawer-section-title {
+.drawer-section-title {{
     font-size: 1.05rem;
     font-weight: 700;
     color: #38bdf8;
     margin-top: 18px;
     margin-bottom: 8px;
-}
+}}
 
-.companion-link {
+.companion-link {{
     display: inline-block;
     padding: 2px 9px;
     margin: 3px 2px;
@@ -342,50 +350,51 @@ div.stButton > button {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.companion-link.cyan {
+}}
+.companion-link.cyan {{
     background: rgba(56, 189, 248, 0.15);
     color: #38bdf8;
     border: 1px solid rgba(56, 189, 248, 0.45);
-}
-.companion-link.red {
+}}
+.companion-link.red {{
     background: rgba(244, 63, 94, 0.15);
     color: #fb7185;
     border: 1px solid rgba(244, 63, 94, 0.45);
-}
-.companion-link.gold {
+}}
+.companion-link.gold {{
     background: rgba(251, 191, 36, 0.15);
     color: #fde047;
     border: 1px solid rgba(251, 191, 36, 0.45);
-}
-.companion-link.purple {
+}}
+.companion-link.purple {{
     background: rgba(192, 132, 252, 0.15);
     color: #c084fc;
     border: 1px solid rgba(192, 132, 252, 0.45);
-}
-.companion-link:hover {
+}}
+.companion-link:hover {{
     transform: translateY(-1px) scale(1.05);
     filter: brightness(1.2);
-}
+}}
 
-.image-slot {
+.image-slot {{
     width: 100%;
-    margin: 12px 0 16px 0;
+    margin: 14px 0 16px 0;
     border: 1.5px dashed rgba(192, 132, 252, 0.35);
     border-radius: 12px;
     background: rgba(15, 12, 33, 0.5);
-    padding: 14px;
+    padding: 12px;
     text-align: center;
     box-sizing: border-box;
-}
-.image-slot:hover {
+}}
+.image-slot:hover {{
     border-color: #38bdf8;
-}
-.image-slot-caption {
+}}
+.image-slot-caption {{
     font-size: 0.78rem;
     color: #94a3b8;
     margin-top: 6px;
-}
+    font-style: italic;
+}}
 </style>
 <div class="stars-overlay"></div>
 <input type="checkbox" id="drawer-toggle" class="drawer-checkbox">
@@ -400,29 +409,24 @@ div.stButton > button {
 <div style="font-size:0.78rem;color:#a855f7;font-weight:600;margin-bottom:12px;">ESTUDIANTE: Juan David Segura &bull; INTERFACES MULTIMODALES</div>
 <div class="drawer-section-title">✨ ¿Qué es este proyecto?</div>
 <p>Es un <b>teatro interactivo que mezcla lo digital con lo físico</b>. Dibujas figuras en el aire con tus dedos frente a la cámara web, y el sistema convierte ese dibujo en un cuento narrado por voz, le compone una melodía musical original y hace que un escenario físico en miniatura (simulado en Wokwi) actúe la escena abriendo telones y moviendo piezas en tiempo real.</p>
-<div class="image-slot">
-<div style="font-size:1.5rem;">🔮 ──▶ 🎭</div>
-<div style="font-weight:600;font-size:0.85rem;color:#cbd5e1;">Espacio para Imagen 1: Flujo Multimodal</div>
-<div class="image-slot-caption">(Reemplaza con captura del sistema interactivo en vivo)</div>
-</div>
 <div class="drawer-section-title">⚙️ ¿Cómo funciona?</div>
 <ol style="padding-left:18px;margin-top:4px;">
 <li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan" data-target="canvas" data-color="#38bdf8">🔍 Resaltar Lienzo de Dibujo</span></li>
+{slot_img_4}
 <li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple" data-target="story" data-color="#c084fc">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
+{slot_img_3}
 <li style="margin-bottom:10px;"><b>El escenario cobra vida:</b><ul style="padding-left:16px;margin-top:4px;"><li>En tu pantalla, tu dibujo aparece recortado flotando y bailando sobre el escenario.</li><li>Por internet (vía MQTT), la placa ESP32 en Wokwi recibe la orden: abre los telones, enciende las luces del color del cuento, eleva al personaje y toca la melodía con su zumbador como una cajita de música.</li></ul></li>
 </ol>
-<div class="image-slot">
-<div style="font-size:1.5rem;">🎪 🦾 🎼</div>
-<div style="font-weight:600;font-size:0.85rem;color:#cbd5e1;">Espacio para Imagen 2: Mecanismo Wokwi</div>
-<div class="image-slot-caption">(Reemplaza con captura del circuito y los servomotores)</div>
-</div>
 <div class="drawer-section-title">🦾 ¿Qué hace cada servomotor exactamente?</div>
+<p>A continuación se observa el estado de reposo del teatro antes de que se inicie la obra:</p>
+{slot_img_2}
 <ul style="padding-left:18px;margin-top:4px;">
 <li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red" data-target="stage" data-color="#f43f5e">🎭 Resaltar Telones en Escenario</span></li>
 <li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold" data-target="stage" data-color="#fbbf24">🚀 Resaltar Elevador Mecánico</span></li>
 <li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan" data-target="stage" data-color="#38bdf8">🌪️ Resaltar Máquina de Viento</span></li>
 </ul>
-<div class="drawer-section-title">💡 El resto del hardware:</div>
+<div class="drawer-section-title">💡 El resto del hardware en acción:</div>
+{slot_img_1}
 <ul style="padding-left:18px;margin-top:4px;">
 <li style="margin-bottom:6px;"><b>Luces LED (Anillo y Tira):</b> Iluminan el arco del cielo y el suelo con el color y brillo que elija la IA para la escena.</li>
 <li style="margin-bottom:6px;"><b>Pantalla OLED:</b> Muestra el título de la obra y el nombre de la partitura que está sonando.</li>
@@ -796,7 +800,6 @@ components.html("""
     var pDoc = window.parent.document;
     if (!pDoc) return;
 
-    // 1. Create or get full-screen overlay canvas for stardust particles
     var canvas = pDoc.getElementById('companion-trail-canvas');
     if (!canvas) {
         canvas = pDoc.createElement('canvas');
@@ -813,7 +816,6 @@ components.html("""
     resizeCanvas();
     window.parent.addEventListener('resize', resizeCanvas);
 
-    // Particle physics system
     var particles = [];
     var isHovering = false;
     var currentSource = null;
@@ -842,19 +844,15 @@ components.html("""
         var rectA = currentSource.getBoundingClientRect();
         var rectB = currentTarget.getBoundingClientRect();
 
-        // Start point: Left edge of hovered badge in the drawer
         var x0 = rectA.left;
         var y0 = rectA.top + rectA.height / 2;
 
-        // End point: Center-right border of the highlighted target box
         var x1 = rectB.right;
         var y1 = rectB.top + rectB.height / 2;
 
-        // Arched bezier control point
         var cx = (x0 + x1) / 2;
         var cy = Math.min(y0, y1) - 80;
 
-        // Emit 3-4 glowing stardust sparks per frame
         for (var i = 0; i < 3; i++) {
             particles.push({
                 x0: x0,
@@ -878,7 +876,6 @@ components.html("""
 
         spawnParticles();
 
-        // 1. Draw glowing corner beacon on the full target box
         if (isHovering && currentTarget) {
             var r = currentTarget.getBoundingClientRect();
             var pad = 6;
@@ -887,35 +884,27 @@ components.html("""
             var bw = r.width + pad * 2;
             var bh = r.height + pad * 2;
 
-            // Full box pulsating neon perimeter
             ctx.save();
             ctx.strokeStyle = currentColor;
             ctx.lineWidth = 3;
             ctx.shadowColor = currentColor;
             ctx.shadowBlur = 24;
 
-            // Rounded rectangle path
             ctx.beginPath();
             ctx.roundRect ? ctx.roundRect(bx, by, bw, bh, 14) : ctx.strokeRect(bx, by, bw, bh);
             ctx.stroke();
 
-            // Corner targeting brackets
             var len = 20;
             ctx.lineWidth = 4;
             ctx.beginPath();
-            // Top Left
             ctx.moveTo(bx, by + len); ctx.lineTo(bx, by); ctx.lineTo(bx + len, by);
-            // Top Right
             ctx.moveTo(bx + bw - len, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + len);
-            // Bottom Left
             ctx.moveTo(bx, by + bh - len); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + len, by + bh);
-            // Bottom Right
             ctx.moveTo(bx + bw - len, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - len);
             ctx.stroke();
             ctx.restore();
         }
 
-        // 2. Animate and draw traveling stardust particles
         for (var j = particles.length - 1; j >= 0; j--) {
             var p = particles[j];
             p.t += p.speed;
@@ -925,15 +914,12 @@ components.html("""
                 continue;
             }
 
-            // Quadratic Bezier interpolation
             var invT = 1 - p.t;
             var curX = invT * invT * p.x0 + 2 * invT * p.t * p.cx + p.t * p.t * p.x1;
             var curY = invT * invT * p.y0 + 2 * invT * p.t * p.cy + p.t * p.t * p.y1;
 
-            // Lateral wobble
             curY += Math.sin(p.t * Math.PI * 4) * p.wobble;
 
-            // Spark appearance
             var alpha = p.t < 0.2 ? p.t / 0.2 : (1 - p.t);
             ctx.save();
             ctx.beginPath();
@@ -959,7 +945,6 @@ components.html("""
         }
     }
 
-    // Attach listeners to companion links
     function bindCompanionTriggers() {
         var links = pDoc.querySelectorAll('.companion-link');
         links.forEach(function(link) {
@@ -977,18 +962,12 @@ components.html("""
                     currentTarget = targetEl;
                     currentColor = color;
 
-                    targetEl.style.setProperty('--highlight-color', color);
-                    targetEl.classList.add('companion-target-highlight');
-
                     startAnimation();
                 }
             });
 
             link.addEventListener('mouseleave', function() {
                 isHovering = false;
-                if (currentTarget) {
-                    currentTarget.classList.remove('companion-target-highlight');
-                }
                 currentTarget = null;
                 currentSource = null;
             });
