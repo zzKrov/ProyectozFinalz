@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
       padding: 0;
-      background: #0e1117;
-      color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: transparent;
+      color: #f8fafc;
+      font-family: 'Fredoka', cursive, sans-serif;
       text-align: center;
       display: flex;
       flex-direction: column;
@@ -19,12 +20,12 @@
     #stage {
       position: relative;
       width: 580px;
-      height: 420px;
-      border-radius: 12px;
+      height: 400px;
+      border-radius: 18px;
       overflow: hidden;
-      background: #161b22;
-      border: 1px solid #30363d;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      background: #110d24;
+      border: 2px solid rgba(168, 85, 247, 0.4);
+      box-shadow: 0 8px 32px rgba(112, 0, 255, 0.25);
     }
     video { display: none; }
     canvas {
@@ -32,52 +33,69 @@
       top: 0;
       left: 0;
       width: 580px;
-      height: 420px;
+      height: 400px;
     }
     #camCanvas { z-index: 1; transform: scaleX(-1); }
     #paintCanvas { z-index: 2; }
     #cursorCanvas { z-index: 3; pointer-events: none; }
+    
     .toolbar {
-      margin-top: 10px;
+      margin-top: 12px;
       display: flex;
-      gap: 10px;
+      gap: 12px;
       justify-content: center;
     }
     button {
-      padding: 8px 16px;
-      font-size: 13px;
+      font-family: 'Fredoka', cursive, sans-serif;
+      padding: 10px 22px;
+      font-size: 14px;
       font-weight: 600;
-      border-radius: 6px;
+      border-radius: 30px;
       border: none;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    .btn-start { background: #238636; color: white; }
-    .btn-clear { background: #da3633; color: white; }
-    .btn-send { background: #1f6feb; color: white; }
-    button:hover { opacity: 0.85; transform: scale(1.02); }
+    .btn-start { 
+      background: linear-gradient(135deg, #10b981, #059669); 
+      color: white; 
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+    .btn-clear { 
+      background: linear-gradient(135deg, #f43f5e, #e11d48); 
+      color: white; 
+      box-shadow: 0 4px 14px rgba(244, 63, 94, 0.35);
+    }
+    .btn-send { 
+      background: linear-gradient(135deg, #a855f7, #6366f1); 
+      color: white; 
+      box-shadow: 0 4px 16px rgba(168, 85, 247, 0.45);
+    }
+    button:hover { 
+      transform: translateY(-2px) scale(1.04); 
+      filter: brightness(1.1); 
+    }
     #status {
-      margin-top: 6px;
-      font-size: 12px;
-      color: #e3b341;
-      min-height: 18px;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #cbd5e1;
+      min-height: 20px;
     }
   </style>
 </head>
 <body>
   <div id="stage">
     <video id="webcam" playsinline autoplay muted></video>
-    <canvas id="camCanvas" width="580" height="420"></canvas>
-    <canvas id="paintCanvas" width="580" height="420"></canvas>
-    <canvas id="cursorCanvas" width="580" height="420"></canvas>
+    <canvas id="camCanvas" width="580" height="400"></canvas>
+    <canvas id="paintCanvas" width="580" height="400"></canvas>
+    <canvas id="cursorCanvas" width="580" height="400"></canvas>
   </div>
 
   <div class="toolbar">
-    <button class="btn-start" id="startBtn" onclick="startCamera()">🎥 Iniciar Cámara</button>
-    <button class="btn-clear" onclick="clearCanvas()">🗑️ Limpiar Trazo</button>
-    <button class="btn-send" onclick="sendToStreamlit()">✨ Enviar Recorte a OpenAI</button>
+    <button class="btn-start" id="startBtn" onclick="startCamera()">🪄 Activar Varita</button>
+    <button class="btn-clear" onclick="clearCanvas()">🧹 Borrador</button>
+    <button class="btn-send" onclick="sendToStreamlit()">✨ ¡Darle Vida!</button>
   </div>
-  <div id="status">Presiona "🎥 Iniciar Cámara" para comenzar.</div>
+  <div id="status">Toca "🪄 Activar Varita" para encender el espejo mágico ✨</div>
 
   <script>
     function sendStreamlitMsg(type, data = {}) {
@@ -86,11 +104,11 @@
 
     function notifyReady() {
       sendStreamlitMsg("streamlit:componentReady", { apiVersion: 1 });
-      sendStreamlitMsg("streamlit:setFrameHeight", { height: 500 });
+      sendStreamlitMsg("streamlit:setFrameHeight", { height: 490 });
     }
 
     window.addEventListener("message", (e) => {
-      if (e.data.type === "streamlit:render") sendStreamlitMsg("streamlit:setFrameHeight", { height: 500 });
+      if (e.data.type === "streamlit:render") sendStreamlitMsg("streamlit:setFrameHeight", { height: 490 });
     });
     notifyReady();
     window.addEventListener("load", notifyReady);
@@ -109,10 +127,9 @@
 
     function clearCanvas() {
       pCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
-      statusDiv.innerText = "Lienzo limpio.";
+      statusDiv.innerText = "Lienzo limpio como el cielo nocturno 🌌";
     }
 
-    // Calculates the tight bounding box of pixels to make a transparent cutout
     function getBoundingBox(ctx, w, h) {
       const data = ctx.getImageData(0, 0, w, h).data;
       let minX = w, minY = h, maxX = 0, maxY = 0;
@@ -143,12 +160,12 @@
     function sendToStreamlit() {
       const box = getBoundingBox(pCtx, paintCanvas.width, paintCanvas.height);
       if (!box) {
-        statusDiv.innerText = "⚠️ Dibuja algo primero pellizcando con los dedos.";
-        statusDiv.style.color = "#f85149";
+        statusDiv.innerText = "🪄 Dibuja algo primero pellizcando tus deditos en el aire.";
+        statusDiv.style.color = "#f43f5e";
         return;
       }
 
-      // 1. Transparent Cutout Canvas (for the dancing animation)
+      // Cutout sticker
       const cutoutCanvas = document.createElement('canvas');
       cutoutCanvas.width = box.w;
       cutoutCanvas.height = box.h;
@@ -156,7 +173,7 @@
       cCtx.drawImage(paintCanvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
       const cutoutBase64 = cutoutCanvas.toDataURL('image/png');
 
-      // 2. High-contrast White Canvas (for OpenAI Vision recognition)
+      // White background for AI recognition
       const visionCanvas = document.createElement('canvas');
       visionCanvas.width = box.w;
       visionCanvas.height = box.h;
@@ -172,8 +189,8 @@
       });
 
       sendStreamlitMsg("streamlit:setComponentValue", { value: payload });
-      statusDiv.innerText = "✅ ¡Recorte transparente enviado!";
-      statusDiv.style.color = "#3fb950";
+      statusDiv.innerText = "✨ ¡Despertando la magia del cuento!...";
+      statusDiv.style.color = "#38bdf8";
     }
 
     function onResults(results) {
@@ -192,77 +209,4 @@
         const x = (1.0 - (thumb.x + index.x) / 2) * paintCanvas.width;
         const y = ((thumb.y + index.y) / 2) * paintCanvas.height;
 
-        const dist = Math.hypot(thumb.x - index.x, thumb.y - index.y);
-        const isPinching = dist < 0.07;
-
-        curCtx.beginPath();
-        curCtx.arc(x, y, isPinching ? 8 : 6, 0, 2 * Math.PI);
-        curCtx.fillStyle = isPinching ? "#00f2fe" : "#f1c40f";
-        curCtx.fill();
-        curCtx.strokeStyle = "#ffffff";
-        curCtx.lineWidth = 2;
-        curCtx.stroke();
-
-        if (isPinching) {
-          statusDiv.innerText = "✍️ DIBUJANDO (Pellizco activo)";
-          statusDiv.style.color = "#00f2fe";
-
-          if (prevPoint) {
-            pCtx.strokeStyle = '#00f2fe';
-            pCtx.shadowColor = '#00f2fe';
-            pCtx.shadowBlur = 10;
-            pCtx.lineWidth = 6;
-            pCtx.lineCap = 'round';
-            pCtx.lineJoin = 'round';
-            pCtx.beginPath();
-            pCtx.moveTo(prevPoint.x, prevPoint.y);
-            pCtx.lineTo(x, y);
-            pCtx.stroke();
-          }
-          prevPoint = { x, y };
-        } else {
-          statusDiv.innerText = "✋ Mano detectada (Junta índice y pulgar para pintar)";
-          statusDiv.style.color = "#f1c40f";
-          prevPoint = null;
-        }
-      } else {
-        statusDiv.innerText = "Muestra tu mano frente a la cámara...";
-        statusDiv.style.color = "#8b949e";
-        prevPoint = null;
-      }
-    }
-
-    async function startCamera() {
-      try {
-        startBtn.disabled = true;
-        statusDiv.innerText = "Cargando MediaPipe...";
-
-        const hands = new Hands({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-        });
-        hands.setOptions({
-          maxNumHands: 1,
-          modelComplexity: 1,
-          minDetectionConfidence: 0.6,
-          minTrackingConfidence: 0.6
-        });
-        hands.onResults(onResults);
-
-        const camera = new Camera(video, {
-          onFrame: async () => { await hands.send({ image: video }); },
-          width: 580,
-          height: 420
-        });
-        await camera.start();
-        startBtn.style.display = "none";
-        statusDiv.innerText = "✅ Cámara activa. Dibuja en el aire pellizcando tus dedos.";
-        statusDiv.style.color = "#3fb950";
-      } catch (e) {
-        statusDiv.innerText = "❌ Error: " + e.message;
-        statusDiv.style.color = "#da3633";
-        startBtn.disabled = false;
-      }
-    }
-  </script>
-</body>
-</html>
+        const dist = Math.hypot(thumb.x - index.x, thumb.y
