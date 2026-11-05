@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
       padding: 0;
       background: transparent;
-      color: #e2e8f0;
-      font-family: 'Space Grotesk', sans-serif;
+      color: #ede6de;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       text-align: center;
       display: flex;
       flex-direction: column;
@@ -18,13 +18,13 @@
     }
     #stage {
       position: relative;
-      width: 580px;
-      height: 400px;
+      width: 560px;
+      height: 380px;
       border-radius: 12px;
       overflow: hidden;
-      background: #090c15;
-      border: 1px solid #1e293b;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+      background: #181716;
+      border: 1px solid #2e2b27;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
     #webcam {
       position: absolute;
@@ -36,37 +36,36 @@
     canvas {
       position: absolute;
       top: 0; left: 0;
-      width: 580px; height: 400px;
+      width: 560px; height: 380px;
     }
     #camCanvas { z-index: 1; transform: scaleX(-1); opacity: 0.85; }
     #paintCanvas { z-index: 2; }
     #cursorCanvas { z-index: 3; pointer-events: none; }
     
     .toolbar {
-      margin-top: 12px;
+      margin-top: 14px;
       display: flex;
       gap: 10px;
       justify-content: center;
     }
     button {
-      font-family: 'JetBrains Mono', monospace;
-      padding: 9px 18px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 8px 18px;
       font-size: 13px;
-      font-weight: 700;
-      border-radius: 6px;
+      font-weight: 600;
+      border-radius: 8px;
       border: 1px solid transparent;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
     }
-    .btn-start { background: #0284c7; color: #fff; border-color: #38bdf8; }
-    .btn-clear { background: #1e293b; color: #94a3b8; border-color: #334155; }
-    .btn-send { background: linear-gradient(135deg, #a855f7, #ec4899); color: white; }
-    button:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn-start { background: #2b2824; color: #ede6de; border-color: #3d3934; }
+    .btn-clear { background: #201e1c; color: #9c9389; border-color: #2e2b27; }
+    .btn-send { background: #d97745; color: #fff; }
+    button:hover { filter: brightness(1.12); }
     #status {
-      font-family: 'JetBrains Mono', monospace;
       margin-top: 8px;
       font-size: 12px;
-      color: #64748b;
+      color: #9c9389;
       min-height: 18px;
     }
   </style>
@@ -74,17 +73,17 @@
 <body>
   <div id="stage">
     <video id="webcam" playsinline autoplay muted></video>
-    <canvas id="camCanvas" width="580" height="400"></canvas>
-    <canvas id="paintCanvas" width="580" height="400"></canvas>
-    <canvas id="cursorCanvas" width="580" height="400"></canvas>
+    <canvas id="camCanvas" width="560" height="380"></canvas>
+    <canvas id="paintCanvas" width="560" height="380"></canvas>
+    <canvas id="cursorCanvas" width="560" height="380"></canvas>
   </div>
 
   <div class="toolbar">
-    <button class="btn-start" id="startBtn" onclick="startCamera()">[+] ACTIVAR SENSOR</button>
-    <button class="btn-clear" onclick="clearCanvas()">PURGAR TRAZO</button>
-    <button class="btn-send" onclick="sendToStreamlit()">⚡ SINTETIZAR OBJETO</button>
+    <button class="btn-start" id="startBtn" onclick="startCamera()">Activar cámara</button>
+    <button class="btn-clear" onclick="clearCanvas()">Limpiar</button>
+    <button class="btn-send" onclick="sendToStreamlit()">Dar vida</button>
   </div>
-  <div id="status">SENSOR ÓPTICO DESACTIVADO &bull; INICIA PARA COMENZAR</div>
+  <div id="status">Presiona "Activar cámara" para comenzar</div>
 
   <script>
     function sendStreamlitMsg(type, data = {}) {
@@ -92,10 +91,10 @@
     }
     function notifyReady() {
       sendStreamlitMsg("streamlit:componentReady", { apiVersion: 1 });
-      sendStreamlitMsg("streamlit:setFrameHeight", { height: 485 });
+      sendStreamlitMsg("streamlit:setFrameHeight", { height: 465 });
     }
     window.addEventListener("message", (e) => {
-      if (e.data.type === "streamlit:render") sendStreamlitMsg("streamlit:setFrameHeight", { height: 485 });
+      if (e.data.type === "streamlit:render") sendStreamlitMsg("streamlit:setFrameHeight", { height: 465 });
     });
     notifyReady();
     window.addEventListener("load", notifyReady);
@@ -130,12 +129,12 @@
 
     async function startCamera() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        statusDiv.innerText = "ERROR: Contexto no seguro (HTTPS requerido)";
+        statusDiv.innerText = "La cámara requiere una conexión HTTPS segura.";
         return;
       }
       try {
         startBtn.disabled = true;
-        statusDiv.innerText = "INICIALIZANDO LECTURA ÓPTICA...";
+        statusDiv.innerText = "Conectando cámara...";
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
@@ -147,11 +146,11 @@
 
         isRunning = true;
         startBtn.style.display = "none";
-        statusDiv.innerText = "LISTO // PELLIZCA ÍNDICE Y PULGAR PARA VECTORIZAR";
+        statusDiv.innerText = "Pellizca el índice y el pulgar para dibujar en el aire";
         requestAnimationFrame(renderLoop);
       } catch (err) {
         startBtn.disabled = false;
-        statusDiv.innerText = "ERROR DE CÁMARA: " + err.message;
+        statusDiv.innerText = "No se pudo encender la cámara: " + err.message;
       }
     }
 
@@ -169,7 +168,7 @@
 
     function clearCanvas() {
       pCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
-      statusDiv.innerText = "MEMORIA PURGADA // LIENZO REINICIADO";
+      statusDiv.innerText = "Lienzo limpio.";
     }
 
     function getBoundingBox(ctx, w, h) {
@@ -190,17 +189,17 @@
       }
       if (!hasPixels) return null;
       return {
-        x: Math.max(0, minX - 12),
-        y: Math.max(0, minY - 12),
-        w: Math.min(w, (maxX - minX) + 24),
-        h: Math.min(h, (maxY - minY) + 24)
+        x: Math.max(0, minX - 14),
+        y: Math.max(0, minY - 14),
+        w: Math.min(w, (maxX - minX) + 28),
+        h: Math.min(h, (maxY - minY) + 28)
       };
     }
 
     function sendToStreamlit() {
       const box = getBoundingBox(pCtx, paintCanvas.width, paintCanvas.height);
       if (!box) {
-        statusDiv.innerText = "ERROR: NO HAY VECTOR TRAZADO";
+        statusDiv.innerText = "Traza primero una figura en el aire.";
         return;
       }
 
@@ -217,15 +216,15 @@
       vCtx.drawImage(cCanvas, 0, 0);
       const visionBase64 = vCanvas.toDataURL('image/png');
 
-      // Unique timestamp guarantees Streamlit processes every single click
+      // Unique ID triggers Streamlit instantly on each click
       sendStreamlitMsg("streamlit:setComponentValue", {
         value: JSON.stringify({
           cutout: cutoutBase64,
           vision: visionBase64,
-          req_id: Date.now()
+          id: String(Date.now())
         })
       });
-      statusDiv.innerText = "⚡ TRANSMITIENDO VECTOR A OPENAI Y ROBOT...";
+      statusDiv.innerText = "Enviado al escenario...";
     }
 
     function onResults(results) {
@@ -247,18 +246,18 @@
 
         curCtx.beginPath();
         curCtx.arc(x, y, isPinching ? 6 : 8, 0, 2 * Math.PI);
-        curCtx.fillStyle = isPinching ? "#38bdf8" : "rgba(255,255,255,0.4)";
+        curCtx.fillStyle = isPinching ? "#e08a58" : "rgba(237, 230, 222, 0.4)";
         curCtx.fill();
-        curCtx.strokeStyle = isPinching ? "#fff" : "#38bdf8";
+        curCtx.strokeStyle = isPinching ? "#ffffff" : "#e08a58";
         curCtx.lineWidth = 1.5;
         curCtx.stroke();
 
         if (isPinching) {
-          statusDiv.innerText = "TRAZANDO COORDENADAS ESPACIALES...";
+          statusDiv.innerText = "Dibujando...";
           if (prevPoint) {
-            pCtx.strokeStyle = '#38bdf8';
-            pCtx.shadowColor = '#0284c7';
-            pCtx.shadowBlur = 12;
+            pCtx.strokeStyle = '#e08a58';
+            pCtx.shadowColor = '#c4703f';
+            pCtx.shadowBlur = 10;
             pCtx.lineWidth = 5;
             pCtx.lineCap = 'round';
             pCtx.lineJoin = 'round';
@@ -269,7 +268,7 @@
           }
           prevPoint = { x, y };
         } else {
-          statusDiv.innerText = "PUNTERO CALIBRADO // PELLIZCA PARA GRABAR";
+          statusDiv.innerText = "Pellizca el índice y el pulgar para dibujar";
           prevPoint = null;
         }
       } else {
