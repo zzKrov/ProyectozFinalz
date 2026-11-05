@@ -1072,7 +1072,7 @@ companion_client_script = """
         if (!c) {
             c = document.createElement('canvas');
             c.id = 'companion-trail-canvas';
-            // z-index: 9999980 ensures all canvas rendering remains strictly underneath the drawer panel (z-index: 10000000)
+            // z-index: 9999980 keeps canvas under the drawer panel (z-index: 10000000)
             c.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:9999980;';
             document.body.appendChild(c);
         }
@@ -1104,14 +1104,16 @@ companion_client_script = """
         for (var i = 0; i < 3; i++) {
             particles.push({
                 t: 0,
-                speed: 0.022 + Math.random() * 0.016,
-                size: 2.2 + Math.random() * 3.4,
+                speed: 0.020 + Math.random() * 0.016,
+                size: 2.2 + Math.random() * 3.2,
                 rot: Math.random() * Math.PI * 2,
                 rotSpeed: (Math.random() - 0.5) * 0.12,
-                type: Math.random() > 0.4 ? 'star' : 'diamond',
-                arcOffset: (Math.random() - 0.5) * 75,
-                targetYRatio: 0.15 + Math.random() * 0.7,
-                wobbleAmp: 5 + Math.random() * 9,
+                type: Math.random() > 0.35 ? 'star' : 'diamond',
+                arcOffset: (Math.random() - 0.5) * 60,
+                // Targets the central body of the highlighted frame
+                targetXRatio: 0.25 + Math.random() * 0.55,
+                targetYRatio: 0.20 + Math.random() * 0.60,
+                wobbleAmp: 4 + Math.random() * 8,
                 phase: Math.random() * Math.PI * 2,
                 color: Math.random() > 0.3 ? currentHex : '#ffffff'
             });
@@ -1217,7 +1219,6 @@ companion_client_script = """
         var bw = rect.width + p * 2;
         var bh = rect.height + p * 2;
 
-        // Dynamically clamp right edge so it never renders over or inside the drawer panel
         if (bx + bw > maxRight) {
             bw = Math.max(0, maxRight - bx);
         }
@@ -1287,17 +1288,23 @@ companion_client_script = """
             var rA = currentBadge.getBoundingClientRect();
             var rB = currentTarget.getBoundingClientRect();
 
+            var visLeft = rB.left;
+            var visRight = Math.min(rB.right, drawerBoundary - 14);
+            var visWidth = Math.max(40, visRight - visLeft);
+
             for (var j = particles.length - 1; j >= 0; j--) {
                 var pt = particles[j];
                 pt.t += pt.speed;
                 pt.rot += pt.rotSpeed;
 
-                var targetFrameRight = Math.min(rB.right + 6, drawerBoundary - 10);
+                // Dynamic target coordinates landing across the body/center of the frame
+                var x1 = visLeft + visWidth * pt.targetXRatio;
+                var y1 = rB.top + rB.height * pt.targetYRatio;
 
                 if (pt.t >= 1) {
                     impacts.push({
-                        x: targetFrameRight,
-                        y: rB.top + rB.height * pt.targetYRatio,
+                        x: x1,
+                        y: y1,
                         radius: 2 + Math.random() * 4,
                         color: pt.color,
                         life: 1.0,
@@ -1307,14 +1314,12 @@ companion_client_script = """
                     continue;
                 }
 
-                // Origin is clamped to drawer boundary seam so particles never bleed over report text
-                var x0 = Math.min(rA.left - 4, drawerBoundary - 6);
+                // Origin emerges from the drawer seam at the button's vertical height
+                var x0 = Math.min(rA.left, drawerBoundary - 4);
                 var y0 = rA.top + rA.height / 2;
-                var x1 = targetFrameRight;
-                var y1 = rB.top + rB.height * pt.targetYRatio;
 
                 var cx = (x0 + x1) / 2;
-                var cy = Math.min(y0, y1) - 60 + pt.arcOffset;
+                var cy = Math.min(y0, y1) - 65 + pt.arcOffset;
 
                 var invT = 1 - pt.t;
                 var curX = invT * invT * x0 + 2 * invT * pt.t * cx + pt.t * pt.t * x1;
@@ -1373,6 +1378,7 @@ companion_client_script = """
             if (b.dataset.bridgeReady === 'true') return;
             b.dataset.bridgeReady = 'true';
 
+            // HOVER AUTOPILOT (ZERO CLICKS REQUIRED)
             b.addEventListener('mouseenter', function() {
                 if (autopilotTimer) {
                     clearTimeout(autopilotTimer);
