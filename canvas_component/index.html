@@ -2,7 +2,6 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
   <style>
@@ -27,7 +26,16 @@
       border: 2px solid rgba(168, 85, 247, 0.4);
       box-shadow: 0 8px 32px rgba(112, 0, 255, 0.25);
     }
-    video { display: none; }
+    /* Kept alive in layout for browser decode pipeline, not display:none */
+    #webcam {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      opacity: 0.001;
+      pointer-events: none;
+    }
     canvas {
       position: absolute;
       top: 0;
@@ -44,6 +52,7 @@
       display: flex;
       gap: 12px;
       justify-content: center;
+      flex-wrap: wrap;
     }
     button {
       font-family: 'Fredoka', cursive, sans-serif;
@@ -79,11 +88,14 @@
       font-size: 13px;
       color: #cbd5e1;
       min-height: 20px;
+      max-width: 540px;
+      line-height: 1.4;
     }
   </style>
 </head>
 <body>
   <div id="stage">
+    <!-- Active Video element -->
     <video id="webcam" playsinline autoplay muted></video>
     <canvas id="camCanvas" width="580" height="400"></canvas>
     <canvas id="paintCanvas" width="580" height="400"></canvas>
@@ -98,6 +110,7 @@
   <div id="status">Toca "🪄 Activar Varita" para encender el espejo mágico ✨</div>
 
   <script>
+    // --- Streamlit Lifecycle Handshake ---
     function sendStreamlitMsg(type, data = {}) {
       window.parent.postMessage({ isStreamlitMessage: true, type, ...data }, "*");
     }
@@ -113,6 +126,7 @@
     notifyReady();
     window.addEventListener("load", notifyReady);
 
+    // --- DOM Elements ---
     const video = document.getElementById('webcam');
     const camCanvas = document.getElementById('camCanvas');
     const camCtx = camCanvas.getContext('2d');
@@ -124,6 +138,95 @@
     const startBtn = document.getElementById('startBtn');
 
     let prevPoint = null;
+    let handsDetector = null;
+    let isRunning = false;
+    let isProcessingFrame = false;
+
+    // Pre-initialize MediaPipe in the background
+    try {
+      handsDetector = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+      handsDetector.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.6
+      });
+      handsDetector.onResults(onResults);
+    } catch (e) {
+      console.warn("MediaPipe load error:", e);
+    }
+
+    // Direct Instant Camera Trigger
+    async function startCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        statusDiv.innerHTML = "❌ Tu navegador bloqueó la cámara. Asegúrate de abrir la app con <b>https://</b>";
+        statusDiv.style.color = "#f43f5e";
+        return;
+      }
+
+      try {
+        startBtn.disabled = true;
+        statusDiv.innerText = "⏳ Solicitando permiso de cámara...";
+        statusDiv.style.color = "#fbbf24";
+
+        // 1. Direct getUserMedia call directly on the click event stack
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: "user"
+          },
+          audio: false
+        });
+
+        video.srcObject = stream;
+        await video.play();
+
+        isRunning = true;
+        startBtn.style.display = "none";
+        statusDiv.innerText = "✨ ¡Espejo encendido! Junta los dedos para pintar.";
+        statusDiv.style.color = "#34d399";
+
+        // 2. Start detection loop with frame control
+        requestAnimationFrame(renderLoop);
+
+      } catch (err) {
+        startBtn.disabled = false;
+        console.error("Camera error:", err);
+        
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+          statusDiv.innerHTML = "🔒 <b>Permiso bloqueado:</b> Haz clic en el candado 🔒 junto a la URL arriba y permite el acceso a la cámara.";
+        } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+          statusDiv.innerHTML = "📷 <b>No se encontró cámara</b> en tu equipo.";
+        } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+          statusDiv.innerHTML = "⚠️ La cámara está siendo usada por otra aplicación (Zoom, Meet, Teams). Ciérrala e intenta de nuevo.";
+        } else {
+          statusDiv.innerHTML = "❌ Error: " + (err.message || err.name);
+        }
+        statusDiv.style.color = "#f43f5e";
+      }
+    }
+
+    // Smooth render & detection loop
+    async function renderLoop() {
+      if (!isRunning) return;
+
+      if (!isProcessingFrame && video.readyState >= 2 && !video.paused) {
+        isProcessingFrame = true;
+        try {
+          if (handsDetector) {
+            await handsDetector.send({ image: video });
+          }
+        } catch (e) {
+          console.warn("Detection skip:", e);
+        }
+        isProcessingFrame = false;
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
 
     function clearCanvas() {
       pCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
@@ -165,7 +268,6 @@
         return;
       }
 
-      // Cutout sticker
       const cutoutCanvas = document.createElement('canvas');
       cutoutCanvas.width = box.w;
       cutoutCanvas.height = box.h;
@@ -173,7 +275,6 @@
       cCtx.drawImage(paintCanvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
       const cutoutBase64 = cutoutCanvas.toDataURL('image/png');
 
-      // White background for AI recognition
       const visionCanvas = document.createElement('canvas');
       visionCanvas.width = box.w;
       visionCanvas.height = box.h;
@@ -183,12 +284,9 @@
       vCtx.drawImage(cutoutCanvas, 0, 0);
       const visionBase64 = visionCanvas.toDataURL('image/png');
 
-      const payload = JSON.stringify({
-        cutout: cutoutBase64,
-        vision: visionBase64
+      sendStreamlitMsg("streamlit:setComponentValue", {
+        value: JSON.stringify({ cutout: cutoutBase64, vision: visionBase64 })
       });
-
-      sendStreamlitMsg("streamlit:setComponentValue", { value: payload });
       statusDiv.innerText = "✨ ¡Despertando la magia del cuento!...";
       statusDiv.style.color = "#38bdf8";
     }
@@ -209,4 +307,45 @@
         const x = (1.0 - (thumb.x + index.x) / 2) * paintCanvas.width;
         const y = ((thumb.y + index.y) / 2) * paintCanvas.height;
 
-        const dist = Math.hypot(thumb.x - index.x, thumb.y
+        const dist = Math.hypot(thumb.x - index.x, thumb.y - index.y);
+        const isPinching = dist < 0.07;
+
+        curCtx.beginPath();
+        curCtx.arc(x, y, isPinching ? 8 : 6, 0, 2 * Math.PI);
+        curCtx.fillStyle = isPinching ? "#38bdf8" : "#fbbf24";
+        curCtx.fill();
+        curCtx.strokeStyle = "#ffffff";
+        curCtx.lineWidth = 2;
+        curCtx.stroke();
+
+        if (isPinching) {
+          statusDiv.innerText = "✍️ ¡Pintando con chispas de luz!";
+          statusDiv.style.color = "#38bdf8";
+
+          if (prevPoint) {
+            pCtx.strokeStyle = '#38bdf8';
+            pCtx.shadowColor = '#818cf8';
+            pCtx.shadowBlur = 10;
+            pCtx.lineWidth = 6;
+            pCtx.lineCap = 'round';
+            pCtx.lineJoin = 'round';
+            pCtx.beginPath();
+            pCtx.moveTo(prevPoint.x, prevPoint.y);
+            pCtx.lineTo(x, y);
+            pCtx.stroke();
+          }
+          prevPoint = { x, y };
+        } else {
+          statusDiv.innerText = "🖐️ Mano lista. Junta índice y pulgar para pintar 🪄";
+          statusDiv.style.color = "#fbbf24";
+          prevPoint = null;
+        }
+      } else {
+        statusDiv.innerText = "Muestra tu manita frente a la cámara...";
+        statusDiv.style.color = "#94a3b8";
+        prevPoint = null;
+      }
+    }
+  </script>
+</body>
+</html>
