@@ -174,7 +174,6 @@ div:has(> iframe[src*="wokwi.com"]),
     transition: outline 0.25s ease, box-shadow 0.25s ease !important;
 }}
 
-/* Autopilot Section Transition */
 .autopilot-reveal {{
     animation: autoReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }}
@@ -297,10 +296,10 @@ div.stButton > button {{
     width: 500px;
     max-width: 92vw;
     height: 100vh;
-    background: rgba(15, 11, 33, 0.97) !important;
+    background: rgba(15, 11, 33, 0.98) !important;
     backdrop-filter: blur(28px);
     border-left: 1px solid rgba(192, 132, 252, 0.4) !important;
-    box-shadow: -15px 0 55px rgba(0, 0, 0, 0.85) !important;
+    box-shadow: -18px 0 60px rgba(0, 0, 0, 0.95) !important;
     z-index: 10000000 !important;
     transform: translateX(105%);
     transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
@@ -313,7 +312,7 @@ div.stButton > button {{
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
     background: rgba(5, 4, 13, 0.15) !important;
-    z-index: 9999999 !important;
+    z-index: 9999995 !important;
     opacity: 0;
     pointer-events: none !important;
     transition: opacity 0.3s ease;
@@ -912,7 +911,6 @@ def render_ambiente_2():
 # =========================================================================
 # ROUTING & DUAL VIEW ENGINE WITH AUTOPILOT CONTAINERS
 # =========================================================================
-# Both containers are rendered in DOM to enable instant hover autopilot navigation
 with st.container():
     st.markdown('<div id="ambience-1-anchor"></div>', unsafe_allow_html=True)
     render_ambiente_1()
@@ -938,6 +936,17 @@ companion_client_script = """
     }
     function getDivider() {
         return document.getElementById('ambience-divider');
+    }
+
+    function getDrawerBoundaryLeft() {
+        var drawer = document.querySelector('.drawer-panel');
+        if (drawer) {
+            var r = drawer.getBoundingClientRect();
+            if (r.left < window.innerWidth - 15) {
+                return r.left;
+            }
+        }
+        return window.innerWidth;
     }
 
     function syncEnvironmentVisibility() {
@@ -1063,7 +1072,8 @@ companion_client_script = """
         if (!c) {
             c = document.createElement('canvas');
             c.id = 'companion-trail-canvas';
-            c.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999999;';
+            // z-index: 9999980 ensures all canvas rendering remains strictly underneath the drawer panel (z-index: 10000000)
+            c.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:9999980;';
             document.body.appendChild(c);
         }
         return c;
@@ -1199,12 +1209,20 @@ companion_client_script = """
 
     function drawTheatricalFrame(rect, hex) {
         var p = 8;
+        var drawerLeft = getDrawerBoundaryLeft();
+        var maxRight = drawerLeft - 10;
+
         var bx = rect.left - p;
         var by = rect.top - p;
         var bw = rect.width + p * 2;
         var bh = rect.height + p * 2;
 
-        if (bw <= 0 || bh <= 0) return;
+        // Dynamically clamp right edge so it never renders over or inside the drawer panel
+        if (bx + bw > maxRight) {
+            bw = Math.max(0, maxRight - bx);
+        }
+
+        if (bw <= 20 || bh <= 0) return;
 
         ctx.save();
         ctx.strokeStyle = hex;
@@ -1257,6 +1275,8 @@ companion_client_script = """
     function loop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        var drawerBoundary = getDrawerBoundaryLeft();
+
         if (currentTarget && isHover) {
             var tr = currentTarget.getBoundingClientRect();
             drawTheatricalFrame(tr, currentHex);
@@ -1272,10 +1292,11 @@ companion_client_script = """
                 pt.t += pt.speed;
                 pt.rot += pt.rotSpeed;
 
+                var targetFrameRight = Math.min(rB.right + 6, drawerBoundary - 10);
+
                 if (pt.t >= 1) {
-                    // Spawn celestial impact sparkles on the target frame
                     impacts.push({
-                        x: rB.right + 4,
+                        x: targetFrameRight,
                         y: rB.top + rB.height * pt.targetYRatio,
                         radius: 2 + Math.random() * 4,
                         color: pt.color,
@@ -1286,9 +1307,10 @@ companion_client_script = """
                     continue;
                 }
 
-                var x0 = rA.left - 4;
+                // Origin is clamped to drawer boundary seam so particles never bleed over report text
+                var x0 = Math.min(rA.left - 4, drawerBoundary - 6);
                 var y0 = rA.top + rA.height / 2;
-                var x1 = rB.right + 6;
+                var x1 = targetFrameRight;
                 var y1 = rB.top + rB.height * pt.targetYRatio;
 
                 var cx = (x0 + x1) / 2;
@@ -1351,7 +1373,6 @@ companion_client_script = """
             if (b.dataset.bridgeReady === 'true') return;
             b.dataset.bridgeReady = 'true';
 
-            // HOVER AUTOPILOT (ZERO CLICKS REQUIRED)
             b.addEventListener('mouseenter', function() {
                 if (autopilotTimer) {
                     clearTimeout(autopilotTimer);
@@ -1403,7 +1424,6 @@ companion_client_script = """
                 currentTarget = null;
                 currentBadge = null;
 
-                // Autopilot restore after leaving
                 autopilotTimer = setTimeout(function() {
                     var amb1 = getAmb1Container();
                     var amb2 = getAmb2Container();
