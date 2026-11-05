@@ -5,6 +5,7 @@ import paho.mqtt.publish as publish
 import json
 import time
 import threading
+import re
 import os
 
 st.set_page_config(
@@ -176,7 +177,7 @@ if "current_audio" not in st.session_state:
 if "current_cutout" not in st.session_state:
     st.session_state.current_cutout = None
 
-# Top Title
+# Header
 st.markdown("""
 <div class="header-glow">
   <div class="app-title">🎭 El Pequeño Teatro de las Historias Vivas ✨</div>
@@ -184,7 +185,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# API Key Bar (shows only if empty)
+# API Key Bar (only if empty)
 if not st.session_state.api_key:
     key_input = st.text_input("🔑 OpenAI API Key Requerida:", type="password", placeholder="sk-...")
     if key_input:
@@ -229,69 +230,86 @@ if canvas_output:
                     history_prompt = "Este es el comienzo de una nueva aventura mágica.\n"
 
                 prompt = f"""
-                Eres el Director Artístico y Compositor Musical de un Teatro de Marionetas para niños.
+                Analiza este nuevo dibujo hecho en el aire para un teatro de marionetas.
                 {history_prompt}
 
-                EL USUARIO ACABA DE DIBUJAR UN NUEVO ELEMENTO EN EL AIRE (mira la imagen adjunta).
-
                 INSTRUCCIONES:
-                1. Identifica qué criatura u objeto dibujó.
-                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 3 oraciones). Continuación directa y natural de los capítulos anteriores.
+                1. Identifica qué criatura u objeto dibujó el usuario.
+                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 o 3 oraciones sencillas y bonitas). Continuación directa de los capítulos anteriores.
                 3. Asigna un título poético al capítulo (máx. 25 letras).
                 4. Colores y elevador para el escenario:
                    - sky_rgb: [R, G, B] color del cielo/arco superior.
                    - foot_rgb: [R, G, B] color de las candilejas de suelo.
-                   - intensity: brillo de 60 a 95.
-                   - prop: altura del atrezo (40 para rastreros, 90 para caminantes, 140 para voladores).
-                5. COMPOSICIÓN MUSICAL REAL (Cajita de música mágica):
-                   Compón un motivo musical armónico, dulce y reconocible de 8 a 12 notas.
-                   REGLA ESTRICTA DE ARMONÍA: Usa únicamente frecuencias estándar de la escala pentatónica para que suene como una melodía real y nunca como ruido:
-                   C4=262, D4=294, E4=330, G4=392, A4=440, C5=523, D5=587, E5=659, G5=784 Hz (y 0 para silencio/pausa).
-                   Duraciones en ms: 150 (rápida), 250 (media), 400 (larga).
+                   - intensity: brillo de 65 a 90.
+                   - prop: elevación del atrezo (40 para terrestres, 90 para caminantes, 140 para voladores).
+                5. COMPOSICIÓN MUSICAL REAL (Melodía de cajita de música):
+                   Compón un motivo musical tierno y armónico de 8 a 12 notas.
+                   REGLA ESTRICTA DE AFINACIÓN: Usa ÚNICAMENTE estas frecuencias de la escala pentatónica mayor para que suene como música real y nunca como ruido:
+                   [262, 294, 330, 392, 440, 523, 587, 659, 784] Hz (usa 0 para silencios/pausas cortas).
+                   Duraciones estándar en ms: 180, 260 o 400.
 
-                Responde ÚNICAMENTE en JSON con esta estructura:
+                Estructura JSON requerida:
                 {{
                   "entity": "nombre del elemento",
                   "title": "Título del Capítulo",
-                  "story_spanish": "Continuación del cuento...",
+                  "story_spanish": "Cuento en español...",
                   "sky_rgb": [90, 40, 220],
                   "foot_rgb": [255, 170, 50],
                   "intensity": 85,
                   "prop": 120,
                   "melody": [
-                    {{"f": 392, "d": 250}},
-                    {{"f": 440, "d": 250}},
-                    {{"f": 523, "d": 400}},
-                    {{"f": 659, "d": 250}},
+                    {{"f": 392, "d": 240}},
+                    {{"f": 440, "d": 240}},
+                    {{"f": 523, "d": 380}},
+                    {{"f": 659, "d": 240}},
                     {{"f": 0, "d": 60}},
-                    {{"f": 587, "d": 250}},
+                    {{"f": 587, "d": 240}},
                     {{"f": 523, "d": 400}}
                   ]
                 }}
                 """
 
+                # Call model with robust system role and JSON enforcement
                 completion = client.chat.completions.create(
                     model="gpt-4o",
                     response_format={"type": "json_object"},
-                    messages=[{
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_data}"}}
-                        ]
-                    }]
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "Eres un narrador de cuentos infantiles y compositor musical. Siempre respondes en formato JSON válido."
+                        },
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_data}"}}
+                            ]
+                        }
+                    ]
                 )
 
-                raw_json = completion.choices[0].message.content.strip()
-                if raw_json.startswith("```"):
-                    raw_json = raw_json.strip("`").replace("json\n", "", 1)
-                chapter_data = json.loads(raw_json)
+                choice = completion.choices[0]
+                message = choice.message
+
+                # Guard against refusal or NoneType content
+                if getattr(message, "refusal", None):
+                    raise ValueError(f"El modelo no pudo procesar la figura: {message.refusal}")
+
+                raw_content = message.content
+                if not raw_content:
+                    raise ValueError(f"Respuesta vacía del modelo (motivo: {choice.finish_reason}). Intenta dibujar de nuevo.")
+
+                # Robust JSON regex extraction
+                match = re.search(r"\{.*\}", raw_content, re.DOTALL)
+                clean_json = match.group(0) if match else raw_content.strip()
+                chapter_data = json.loads(clean_json)
 
                 # Voice narration
+                story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
                 tts = client.audio.speech.create(
                     model="tts-1",
                     voice="nova",
-                    input=chapter_data["story_spanish"]
+                    input=story_text
                 )
                 audio_bytes = tts.content
 
@@ -304,7 +322,7 @@ if canvas_output:
                     "num": current_chapter_num,
                     "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
                     "entity": chapter_data.get("entity", "Creación mágica"),
-                    "text": chapter_data.get("story_spanish", ""),
+                    "text": story_text,
                     "cutout": cutout_img,
                     "audio": audio_bytes
                 })
