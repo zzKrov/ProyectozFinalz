@@ -4,17 +4,18 @@ from openai import OpenAI
 import paho.mqtt.publish as publish
 import json
 import time
+import threading
 import os
 
 st.set_page_config(
-    page_title="El Pequeño Teatro de las Historias Vivas",
-    page_icon="🎭",
+    page_title="El Espejo de las Historias Vivas",
+    page_icon="🔮",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 # ---------------------------------------------------------
-# Magical & Whimsical Proscenium Theme
+# Magical & Luminous Styling
 # ---------------------------------------------------------
 magical_theme = """
 <style>
@@ -148,6 +149,21 @@ WOKWI_PROJECT_ID = "479816492813091841"
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_TOPIC = "air_draw_story/stage_cue"
 
+# Non-blocking MQTT dispatcher (Never freezes Streamlit UI)
+def dispatch_mqtt_async(payload_dict):
+    def _worker():
+        try:
+            publish.single(
+                MQTT_TOPIC,
+                json.dumps(payload_dict),
+                hostname=MQTT_BROKER,
+                retain=True,
+                keepalive=5
+            )
+        except Exception as e:
+            print(f"[MQTT Async Notice]: {e}")
+    threading.Thread(target=_worker, daemon=True).start()
+
 if "wokwi_session_token" not in st.session_state:
     st.session_state.wokwi_session_token = int(time.time())
 if "api_key" not in st.session_state:
@@ -169,6 +185,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# API Key fallback input if secrets is empty
 if not st.session_state.api_key:
     temp_key = st.text_input("Ingresa tu OpenAI API Key para activar la escena:", type="password", placeholder="sk-...")
     if temp_key:
@@ -186,22 +203,23 @@ with col_draw:
     st.caption("Pellizca el índice y el pulgar para pintar con polvo de estrellas.")
     canvas_output = air_canvas(default=None, key="air_canvas_ui")
 
-# Handle Drawing Submission
+# ---------------------------------------------------------
+# Sequential Storytelling Processing (Continuity Engine)
+# ---------------------------------------------------------
 if canvas_output:
     try:
         data = json.loads(canvas_output) if isinstance(canvas_output, str) else canvas_output
         action_id = data.get("id")
 
         if not st.session_state.api_key:
-            st.error("Se requiere una OpenAI API Key para crear la historia.")
+            st.error("⚠️ Se requiere una OpenAI API Key para crear la historia.")
         elif action_id and action_id != st.session_state.processed_id:
-            st.session_state.processed_id = action_id
             cutout_img = data.get("cutout")
-            st.session_state.current_cutout = cutout_img
+            vision_raw = data.get("vision", "")
+            base64_data = vision_raw.split(",")[1] if "," in vision_raw else vision_raw
 
             with st.spinner(f"✨ Abriendo telones para el Capítulo {current_chapter_num}..."):
                 client = OpenAI(api_key=st.session_state.api_key)
-                base64_data = data.get("vision").split(",")[1]
 
                 history_prompt = ""
                 if st.session_state.story_chapters:
@@ -218,18 +236,18 @@ if canvas_output:
                 EL USUARIO ACABA DE DIBUJAR UN NUEVO ELEMENTO EN EL AIRE (mira la imagen adjunta).
 
                 INSTRUCCIONES:
-                1. Identifica con cariño y fantasía qué criatura, objeto o símbolo dibujó.
+                1. Identifica qué criatura, objeto o símbolo dibujó.
                 2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 4 oraciones).
-                   IMPORTANTE: Debe ser una continuación directa de los capítulos anteriores, integrando este nuevo dibujo como el siguiente personaje o giro de la trama.
+                   Continuación directa de los capítulos anteriores.
                 3. Asigna un título poético al capítulo (máx. 25 caracteres).
                 4. Control del Escenario Mecánico:
-                   - sky_rgb: [R, G, B] color del arco proscenio superior (ej: azul noche [40, 20, 180], sol poniente [255, 100, 30], bosque esmeralda [20, 180, 80]).
-                   - foot_rgb: [R, G, B] color cálido de las candilejas de piso (ej: ámbar [255, 160, 40], fuego [255, 70, 20]).
-                   - intensity: Brillo escénico de 50 a 100%.
-                   - prop: Altura del elevador mecánico de atrezo (40 para elementos terrestres/reptantes, 90 para caminantes, 150 para voladores/estrellas).
-                5. Melodía escénica: 10 a 14 notas musicales en Hz [260 a 950] y ms [120 a 300] acordes al estado emocional.
+                   - sky_rgb: [R, G, B] color del arco proscenio superior.
+                   - foot_rgb: [R, G, B] color cálido de las candilejas de piso.
+                   - intensity: Brillo de 50 a 100%.
+                   - prop: Altura del elevador mecánico (40 a 150).
+                5. Melodía escénica: 10 a 14 notas musicales en Hz [260 a 950] y ms [120 a 300].
 
-                Responde ÚNICAMENTE en JSON:
+                Responde ÚNICAMENTE en JSON con esta estructura:
                 {{
                   "entity": "nombre del nuevo elemento",
                   "title": "Título del Capítulo",
@@ -258,7 +276,11 @@ if canvas_output:
                         ]
                     }]
                 )
-                chapter_data = json.loads(completion.choices[0].message.content)
+
+                raw_json = completion.choices[0].message.content.strip()
+                if raw_json.startswith("```"):
+                    raw_json = raw_json.strip("`").replace("json\n", "", 1)
+                chapter_data = json.loads(raw_json)
 
                 # Narration Audio Synthesis
                 tts = client.audio.speech.create(
@@ -267,6 +289,10 @@ if canvas_output:
                     input=chapter_data["story_spanish"]
                 )
                 audio_bytes = tts.content
+
+                # Mark processed only on full success
+                st.session_state.processed_id = action_id
+                st.session_state.current_cutout = cutout_img
                 st.session_state.current_audio = audio_bytes
 
                 # Save chapter
@@ -279,7 +305,7 @@ if canvas_output:
                     "audio": audio_bytes
                 })
 
-                # Theatrical Stage Payload for Wokwi
+                # Hardware payload for Wokwi
                 stage_payload = {
                     "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
                     "sky_rgb": chapter_data.get("sky_rgb", [90, 40, 220]),
@@ -289,22 +315,11 @@ if canvas_output:
                     "melody": chapter_data.get("melody", [])
                 }
 
-                # Publish to live Wokwi via MQTT
-                try:
-                    publish.single(
-                        MQTT_TOPIC,
-                        json.dumps(stage_payload),
-                        hostname=MQTT_BROKER,
-                        retain=True,
-                        keepalive=10
-                    )
-                except Exception as mqtt_err:
-                    st.warning(f"MQTT: {mqtt_err}")
-
-                st.rerun()
+                # Dispatched in background thread: NEVER hangs or freezes Streamlit
+                dispatch_mqtt_async(stage_payload)
 
     except Exception as err:
-        st.error(f"Hechizo interrumpido: {err}")
+        st.error(f"❌ Error al generar: {err}")
 
 with col_stage:
     col_st_title, col_btns = st.columns([0.65, 0.35])
@@ -369,9 +384,10 @@ with col_stage:
 if len(st.session_state.story_chapters) > 1:
     st.markdown("---")
     st.markdown("### 📖 Crónica del Cuento Completo")
-    ch_cols = st.columns(len(st.session_state.story_chapters))
+    ch_cols = st.columns(min(len(st.session_state.story_chapters), 5))
     for idx, ch in enumerate(st.session_state.story_chapters):
-        with ch_cols[idx]:
+        col_idx = idx % 5
+        with ch_cols[col_idx]:
             st.markdown(f"**Cap. {ch['num']}: {ch['title']}**")
             if ch.get("cutout"):
                 st.image(ch["cutout"], width=90)
