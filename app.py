@@ -3,102 +3,118 @@ import streamlit.components.v1 as components
 from openai import OpenAI
 import paho.mqtt.publish as publish
 import json
+import time
 import os
 
 st.set_page_config(
-    page_title="Kinetic Automata Lab // Generative Fab-Cell",
-    page_icon="🦾",
+    page_title="Historias en el aire",
+    page_icon="✨",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 # ---------------------------------------------------------
-# Cybernetic Atelier Theme
+# Warm, Understated Styling
 # ---------------------------------------------------------
-studio_theme = """
+custom_theme = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Lora:ital,wght@0,500;1,400&display=swap');
 
 [data-testid="collapsedControl"], section[data-testid="stSidebar"], #MainMenu, footer {
     display: none !important;
 }
 
 html, body, [data-testid="stAppViewContainer"] {
-    font-family: 'Space Grotesk', sans-serif !important;
-    background: #090a10 !important;
-    color: #e2e8f0;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    background: #141312 !important;
+    color: #ede6de !important;
 }
 
-.mono {
-    font-family: 'JetBrains Mono', monospace !important;
-}
-
-.hud-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
-    padding-bottom: 14px;
+.header-container {
+    padding: 12px 0 20px 0;
+    border-bottom: 1px solid #292623;
     margin-bottom: 24px;
 }
-.brand-title {
-    font-size: 1.8rem;
+.app-title {
+    font-size: 1.7rem;
     font-weight: 700;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #38bdf8 0%, #a855f7 50%, #f43f5e 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+    color: #ede6de;
 }
-.status-pill {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    background: rgba(56, 189, 248, 0.1);
-    color: #38bdf8;
-    padding: 6px 14px;
-    border-radius: 9999px;
-    border: 1px solid rgba(56, 189, 248, 0.3);
+.app-subtitle {
+    font-size: 0.95rem;
+    color: #9c9389;
+    margin-top: 4px;
+}
+
+.story-box {
+    background: #1d1b19;
+    border: 1px solid #2e2b27;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 14px;
+}
+.story-text {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #d6cdc4;
+    margin-top: 8px;
+}
+.story-title {
+    font-weight: 600;
+    font-size: 1.15rem;
+    color: #ede6de;
+}
+
+div.stButton > button {
+    background-color: #262320 !important;
+    color: #ede6de !important;
+    border: 1px solid #3d3934 !important;
+    border-radius: 8px !important;
+    padding: 6px 14px !important;
+    font-size: 0.85rem !important;
+}
+div.stButton > button:hover {
+    background-color: #332f2a !important;
+    border-color: #544e47 !important;
 }
 </style>
 """
-st.markdown(studio_theme, unsafe_allow_html=True)
+st.markdown(custom_theme, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Setup & API Key
+# State & Configuration
 # ---------------------------------------------------------
+WOKWI_PROJECT_ID = "479816492813091841"
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_TOPIC = "air_draw_story/stage_cue"
 
-# Session State
 if "api_key" not in st.session_state:
     st.session_state.api_key = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
-if "last_req_id" not in st.session_state:
-    st.session_state.last_req_id = None
+if "processed_id" not in st.session_state:
+    st.session_state.processed_id = None
 if "story_data" not in st.session_state:
     st.session_state.story_data = None
 if "audio_bytes" not in st.session_state:
     st.session_state.audio_bytes = None
 if "drawing_cutout" not in st.session_state:
     st.session_state.drawing_cutout = None
-if "wokwi_id" not in st.session_state:
-    st.session_state.wokwi_id = "479816492813091841"
+if "stage_version" not in st.session_state:
+    st.session_state.stage_version = int(time.time())
 
+# Top Header
 st.markdown("""
-<div class="hud-header">
-  <div>
-    <div class="brand-title">KINETIC LAB // AUTONOMOUS AUTOMATA FAB-CELL</div>
-    <div style="font-size: 0.85rem; color: #64748b; margin-top: 3px;">
-      Spatial Vector Synthesis &bull; 5-Axis Robotic Kinematics &bull; Algorithmic Chiptune Synthesis
-    </div>
-  </div>
-  <div class="status-pill">SYS_CORE: ONLINE</div>
+<div class="header-container">
+  <div class="app-title">Historias en el aire</div>
+  <div class="app-subtitle">Dibuja una silueta frente a la cámara y mira cómo cobra vida en el escenario.</div>
 </div>
 """, unsafe_allow_html=True)
 
-# API Key Bar
 if not st.session_state.api_key:
-    key_input = st.text_input("🔑 OpenAI API Key Requerida:", type="password", placeholder="sk-...")
-    if key_input:
-        st.session_state.api_key = key_input.strip()
+    key_val = st.text_input("OpenAI API Key:", type="password", placeholder="sk-...")
+    if key_val:
+        st.session_state.api_key = key_val.strip()
         st.rerun()
 
 component_path = os.path.join(os.path.dirname(__file__), "canvas_component")
@@ -107,63 +123,57 @@ air_canvas = components.declare_component("air_canvas", path=component_path)
 col_draw, col_stage = st.columns([1.0, 1.0], gap="large")
 
 with col_draw:
-    st.markdown("##### 📐 TERMINAL DE DIBUJO VECTORIAL // AIRE")
+    st.caption("Pellizca el pulgar y el índice para trazar tu figura.")
     canvas_output = air_canvas(default=None, key="air_canvas_ui")
 
-# Handle Processing on Click
+# Handle Drawing Submission
 if canvas_output:
     try:
-        data = json.loads(canvas_output)
-        req_id = data.get("req_id")
+        data = json.loads(canvas_output) if isinstance(canvas_output, str) else canvas_output
+        action_id = data.get("id")
 
         if not st.session_state.api_key:
-            st.error("⚠️ No hay OpenAI API Key configurada. Ingrésala arriba para sintetizar.")
-        elif req_id and req_id != st.session_state.last_req_id:
-            st.session_state.last_req_id = req_id
+            st.error("Ingresa una OpenAI API Key para crear la historia.")
+        elif action_id and action_id != st.session_state.processed_id:
+            st.session_state.processed_id = action_id
             st.session_state.drawing_cutout = data.get("cutout")
 
-            with st.spinner("⚡ Calculando Cinemática Inversa y Melodía Algorítmica..."):
+            with st.spinner("Creando la historia y animando el escenario..."):
                 client = OpenAI(api_key=st.session_state.api_key)
                 base64_data = data.get("vision").split(",")[1]
 
                 prompt = """
-                Eres el Diseñador Principal de un Laboratorio de Robótica Cinemática y Compositor de Música Electrónica.
-                Analiza el dibujo espacial:
-                1. Clasifica el objeto con nombre de ingeniería (ej: "CYBER-CAT // MK-IV").
-                2. Escribe una historia cautivadora en ESPAÑOL (máximo 3 oraciones).
-                3. Define la cinemática de ensamblaje para un brazo de 5 ejes:
-                   - kinematics: [anguloBase, anguloHombro, anguloCodo, anguloMuñeca, anguloHerramienta] (de 20 a 160 grados).
-                   - primary_rgb: [R, G, B] color láser principal.
-                   - sec_rgb: [R, G, B] color secundario.
-                4. COMPÓN UNA MELODÍA ORIGINAL:
-                   Genera un array "melody" de 12 a 16 notas musicales (f: frecuencia en Hz [260 a 1100], d: duración en ms [100 a 350]).
-                   ¡Debe ser una melodía pegadiza acorde a la figura!
-                5. 4 keyframes CSS transform (x, y, scale, rotate) para el holograma.
+                Analiza este dibujo hecho a mano en el aire:
+                1. Identifica qué figura u objeto es.
+                2. Escribe una historia breve, cálida y bonita en ESPAÑOL (2 o 3 oraciones).
+                3. Diseña el movimiento de los 5 servos del escenario físico:
+                   - kinematics: [base, hombro, codo, muñeca, herramienta] (ángulos de 25 a 155 grados).
+                   - primary_rgb: [R, G, B] color cálido para las luces principales.
+                   - sec_rgb: [R, G, B] color secundario de fondo.
+                4. Compón una pequeña melodía agradable de 12 a 16 notas para el zumbador del escenario:
+                   array "melody" con objetos {"f": frecuencia_hz [260 a 950], "d": duracion_ms [120 a 300]}.
+                5. 4 keyframes suaves de animación CSS transform (x en [-45, 45], y en [-20, 20], scale [0.95, 1.15], rotate [-12, 12]).
 
-                Responde ESTRICTAMENTE en JSON con esta estructura exacta:
+                Responde ÚNICAMENTE en JSON con esta estructura:
                 {
-                  "model": "CYBER-ENTITY",
-                  "material": "AERO-ALLOY",
-                  "interpretation": "descripción",
-                  "title": "Protocolo",
+                  "model": "Nombre del personaje",
+                  "title": "Título corto",
                   "story_spanish": "Cuento en español...",
-                  "primary_rgb": [0, 240, 255],
-                  "sec_rgb": [255, 90, 0],
-                  "kinematics": [120, 65, 140, 85, 130],
+                  "primary_rgb": [220, 120, 60],
+                  "sec_rgb": [60, 130, 200],
+                  "kinematics": [90, 50, 130, 90, 110],
                   "melody": [
-                    {"f": 440, "d": 140},
-                    {"f": 554, "d": 140},
-                    {"f": 659, "d": 160},
-                    {"f": 880, "d": 300},
-                    {"f": 659, "d": 140},
-                    {"f": 880, "d": 350},
-                    {"f": 988, "d": 200},
-                    {"f": 1046, "d": 400}
+                    {"f": 392, "d": 150},
+                    {"f": 440, "d": 150},
+                    {"f": 523, "d": 180},
+                    {"f": 659, "d": 260},
+                    {"f": 587, "d": 150},
+                    {"f": 523, "d": 300}
                   ],
                   "keyframes": [
-                    { "x": 0, "y": -25, "scale": 1.15, "rotate": 8 },
-                    { "x": 45, "y": -12, "scale": 0.95, "rotate": -10 },
-                    { "x": -40, "y": 18, "scale": 1.12, "rotate": 12 },
+                    { "x": 0, "y": -18, "scale": 1.1, "rotate": 6 },
+                    { "x": 30, "y": -8, "scale": 0.95, "rotate": -6 },
+                    { "x": -25, "y": 12, "scale": 1.05, "rotate": 8 },
                     { "x": 0, "y": 0, "scale": 1.0, "rotate": 0 }
                   ]
                 }
@@ -183,15 +193,15 @@ if canvas_output:
                 story_json = json.loads(completion.choices[0].message.content)
                 st.session_state.story_data = story_json
 
-                # Narration Audio
+                # Audio synthesis
                 tts = client.audio.speech.create(
                     model="tts-1",
-                    voice="onyx",
+                    voice="alloy",
                     input=story_json["story_spanish"]
                 )
                 st.session_state.audio_bytes = tts.content
 
-                # MQTT Retained Dispatch
+                # Send cue to Wokwi via MQTT
                 try:
                     publish.single(
                         MQTT_TOPIC,
@@ -200,110 +210,107 @@ if canvas_output:
                         retain=True,
                         keepalive=10
                     )
-                except Exception as mqtt_err:
-                    st.warning(f"MQTT: {mqtt_err}")
-                
+                except Exception as e:
+                    pass
+
                 st.rerun()
 
-    except Exception as e:
-        st.error(f"Error en el Taller Cinemático: {e}")
+    except Exception as err:
+        st.error(f"Nota: {err}")
 
 with col_stage:
-    st.markdown("##### 🔬 PROYECCIÓN VOLUMÉTRICA & TELEMETRÍA")
+    col_t, col_btn = st.columns([0.75, 0.25])
+    with col_t:
+        st.caption("El escenario en vivo (Wokwi)")
+    with col_btn:
+        if st.button("🔄 Recargar"):
+            st.session_state.stage_version = int(time.time())
+            st.rerun()
+
+    # The Unified Stage Box: Live Wokwi background + Floating Cutout in foreground
+    wokwi_embed_url = f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram&v={st.session_state.stage_version}"
 
     if st.session_state.story_data and st.session_state.drawing_cutout:
-        story = st.session_state.story_data
-        
-        st.markdown(f"### {story.get('title')}")
-        st.markdown(f"""
-        <div class="mono" style="font-size: 0.8rem; color: #38bdf8; margin-bottom: 8px;">
-          CLASSIFICATION: {story.get('model')} // MATERIAL: {story.get('material', 'PLASMA')}
-        </div>
-        """, unsafe_allow_html=True)
-
-        if st.session_state.audio_bytes:
-            st.audio(st.session_state.audio_bytes, format="audio/mp3", autoplay=True)
-
-        st.markdown(
-            f"""
-            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px 18px; border-radius: 10px; border-left: 3px solid #38bdf8; font-size: 0.95rem; line-height: 1.6; margin-bottom: 12px; color: #cbd5e1;">
-            {story.get('story_spanish')}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        kf = story.get("keyframes", [])
+        kf = st.session_state.story_data.get("keyframes", [])
         anim_css = f"""
-        @keyframes holoFloat {{
+        @keyframes floatDance {{
           0%   {{ transform: translate(0px, 0px) scale(1) rotate(0deg); }}
           25%  {{ transform: translate({kf[0]['x']}px, {kf[0]['y']}px) scale({kf[0]['scale']}) rotate({kf[0]['rotate']}deg); }}
           50%  {{ transform: translate({kf[1]['x']}px, {kf[1]['y']}px) scale({kf[1]['scale']}) rotate({kf[1]['rotate']}deg); }}
           75%  {{ transform: translate({kf[2]['x']}px, {kf[2]['y']}px) scale({kf[2]['scale']}) rotate({kf[2]['rotate']}deg); }}
           100% {{ transform: translate({kf[3]['x']}px, {kf[3]['y']}px) scale({kf[3]['scale']}) rotate({kf[3]['rotate']}deg); }}
         }}
-        .holo-chamber {{
+        """
+        overlay_html = f"""
+        <img src="{st.session_state.drawing_cutout}" 
+             style="max-height: 150px; max-width: 150px; object-fit: contain; animation: floatDance 5s infinite alternate ease-in-out; filter: drop-shadow(0 4px 18px rgba(0,0,0,0.85));" />
+        """
+    else:
+        anim_css = ""
+        overlay_html = """
+        <div style="background: rgba(22, 21, 20, 0.75); backdrop-filter: blur(4px); padding: 8px 16px; border-radius: 20px; font-size: 13px; color: #a89f94; border: 1px solid rgba(255,255,255,0.06);">
+          El escenario está listo. Dibuja algo y pulsa "Dar vida".
+        </div>
+        """
+
+    stage_container_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        {anim_css}
+        body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; }}
+        .stage-wrapper {{
+          position: relative;
           width: 100%;
-          height: 220px;
+          height: 380px;
           border-radius: 12px;
-          background: radial-gradient(circle at center, #111827 0%, #030712 100%);
-          border: 1px solid #1f2937;
+          overflow: hidden;
+          background: #181716;
+          border: 1px solid #2e2b27;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }}
+        .wokwi-frame {{
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          border: none;
+          z-index: 1;
+        }}
+        .drawing-overlay {{
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          z-index: 2;
+          pointer-events: none;
           display: flex;
           align-items: center;
           justify-content: center;
-          position: relative;
-          overflow: hidden;
         }}
-        .dancing-cutout {{
-          max-height: 150px;
-          max-width: 150px;
-          object-fit: contain;
-          animation: holoFloat 6s infinite alternate ease-in-out;
-          filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.9)) drop-shadow(0 0 6px #a855f7);
-        }}
-        """
-        stage_html = f"""
-        <style>{anim_css}</style>
-        <div class="holo-chamber">
-          <img src="{st.session_state.drawing_cutout}" class="dancing-cutout"/>
+      </style>
+    </head>
+    <body>
+      <div class="stage-wrapper">
+        <iframe src="{wokwi_embed_url}" class="wokwi-frame"></iframe>
+        <div class="drawing-overlay">
+          {overlay_html}
         </div>
-        """
-        components.html(stage_html, height=230)
-    else:
-        st.markdown(
-            """
-            <div style="background: #0f121d; border: 1px dashed #1e293b; border-radius: 12px; height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 25px;">
-                <div style="font-size: 2.2rem; margin-bottom: 8px;">🦾⚡</div>
-                <div style="font-size: 1.05rem; font-weight: 700; color: #f1f5f9;">CELDA ROBÓTICA EN ESPERA</div>
-                <div class="mono" style="font-size: 0.8rem; color: #64748b; max-width: 320px; margin-top: 6px;">
-                  1. Activa el sensor óptico en el panel izquierdo.<br>
-                  2. Traza una figura con los dedos.<br>
-                  3. Ejecuta "⚡ SINTETIZAR OBJETO".
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+      </div>
+    </body>
+    </html>
+    """
+    components.html(stage_container_html, height=395)
 
-# ---------------------------------------------------------
-# Dynamic Wokwi Embed (Supports Your ProyectozFinalz ID)
-# ---------------------------------------------------------
-st.markdown("---")
-col_info, col_set_id = st.columns([0.6, 0.4])
+    # Narrative Display
+    if st.session_state.story_data:
+        story = st.session_state.story_data
+        
+        st.markdown(f"""
+        <div class="story-box">
+          <div class="story-title">{story.get('title', 'Historia')}</div>
+          <div class="story-text">{story.get('story_spanish', '')}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-with col_info:
-    st.markdown("##### 🦾 CÉLULA ROBÓTICA CINEMÁTICA EN VIVO // WOKWI ESP32")
-    st.caption("🟢 Sincronizado por MQTT. Presiona ▶️ en el simulador si está detenido.")
-
-with col_set_id:
-    new_wokwi_id = st.text_input(
-        "ID del Proyecto Wokwi:", 
-        value=st.session_state.wokwi_id,
-        help="Copia el número al final de la URL en tu pestaña de Wokwi (ej: 479816492813091841)"
-    )
-    if new_wokwi_id != st.session_state.wokwi_id:
-        st.session_state.wokwi_id = new_wokwi_id.strip()
-        st.rerun()
-
-embed_url = f"https://wokwi.com/projects/{st.session_state.wokwi_id}?view=diagram"
-components.iframe(embed_url, height=620, scrolling=True)
+        if st.session_state.audio_bytes:
+            st.audio(st.session_state.audio_bytes, format="audio/mp3", autoplay=True)
