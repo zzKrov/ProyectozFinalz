@@ -283,17 +283,26 @@ if canvas_output:
                     "audio": audio_bytes
                 })
 
-                # Send cue to live Wokwi via MQTT (triggers live servos & buzzer without reloading!)
+                # Hardware stage payload (optimized for fast transmission)
+                stage_payload = {
+                    "title": chapter_data.get("title", f"Capitulo {current_chapter_num}"),
+                    "rgb1": chapter_data.get("primary_rgb", [0, 240, 255]),
+                    "rgb2": chapter_data.get("sec_rgb", [192, 132, 252]),
+                    "angles": chapter_data.get("kinematics", [90, 55, 125, 80, 110]),
+                    "melody": chapter_data.get("melody", [])
+                }
+
+                # Send to live Wokwi via MQTT
                 try:
                     publish.single(
                         MQTT_TOPIC,
-                        json.dumps(chapter_data),
+                        json.dumps(stage_payload),
                         hostname=MQTT_BROKER,
                         retain=True,
                         keepalive=10
                     )
-                except Exception:
-                    pass
+                except Exception as mqtt_err:
+                    st.warning(f"MQTT: {mqtt_err}")
 
                 st.rerun()
 
