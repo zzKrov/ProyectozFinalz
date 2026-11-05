@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Cybernetic Atelier Theme: Obsidian Titanium & Slate
+# Cybernetic Atelier Theme
 # ---------------------------------------------------------
 studio_theme = """
 <style>
@@ -57,29 +57,30 @@ html, body, [data-testid="stAppViewContainer"] {
     padding: 6px 14px;
     border-radius: 9999px;
     border: 1px solid rgba(56, 189, 248, 0.3);
-    letter-spacing: 1px;
-}
-
-.lab-card {
-    background: #0f121d;
-    border: 1px solid #1e2438;
-    border-radius: 14px;
-    padding: 18px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 </style>
 """
 st.markdown(studio_theme, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Live Configuration
+# Setup & API Key
 # ---------------------------------------------------------
-# '?view=diagram' forces Wokwi to hide all code tabs and display pure hardware
-LIVE_WOKWI_URL = "https://wokwi.com/projects/479816492813091841?view=diagram"
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_TOPIC = "air_draw_story/stage_cue"
 
-api_key = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", None))
+# Session State
+if "api_key" not in st.session_state:
+    st.session_state.api_key = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
+if "last_req_id" not in st.session_state:
+    st.session_state.last_req_id = None
+if "story_data" not in st.session_state:
+    st.session_state.story_data = None
+if "audio_bytes" not in st.session_state:
+    st.session_state.audio_bytes = None
+if "drawing_cutout" not in st.session_state:
+    st.session_state.drawing_cutout = None
+if "wokwi_id" not in st.session_state:
+    st.session_state.wokwi_id = "479816492813091841"
 
 st.markdown("""
 <div class="hud-header">
@@ -89,27 +90,19 @@ st.markdown("""
       Spatial Vector Synthesis &bull; 5-Axis Robotic Kinematics &bull; Algorithmic Chiptune Synthesis
     </div>
   </div>
-  <div class="status-pill">SYS_CORE: ONLINE &bull; 60 FPS</div>
+  <div class="status-pill">SYS_CORE: ONLINE</div>
 </div>
 """, unsafe_allow_html=True)
 
-if not api_key:
-    with st.expander("🔑 AUTENTICACIÓN: Configurar OpenAI API Key", expanded=True):
-        temp_key = st.text_input("OpenAI Secret Key", type="password", placeholder="sk-...")
-        if temp_key:
-            api_key = temp_key
+# API Key Bar
+if not st.session_state.api_key:
+    key_input = st.text_input("🔑 OpenAI API Key Requerida:", type="password", placeholder="sk-...")
+    if key_input:
+        st.session_state.api_key = key_input.strip()
+        st.rerun()
 
 component_path = os.path.join(os.path.dirname(__file__), "canvas_component")
 air_canvas = components.declare_component("air_canvas", path=component_path)
-
-if "last_processed" not in st.session_state:
-    st.session_state.last_processed = None
-if "story_data" not in st.session_state:
-    st.session_state.story_data = None
-if "audio_bytes" not in st.session_state:
-    st.session_state.audio_bytes = None
-if "drawing_cutout" not in st.session_state:
-    st.session_state.drawing_cutout = None
 
 col_draw, col_stage = st.columns([1.0, 1.0], gap="large")
 
@@ -117,42 +110,43 @@ with col_draw:
     st.markdown("##### 📐 TERMINAL DE DIBUJO VECTORIAL // AIRE")
     canvas_output = air_canvas(default=None, key="air_canvas_ui")
 
-# Generative AI Processing: Visual Recognition + Kinematics + Melody
-if canvas_output and api_key:
+# Handle Processing on Click
+if canvas_output:
     try:
         data = json.loads(canvas_output)
-        cutout_img = data.get("cutout")
-        vision_img = data.get("vision")
+        req_id = data.get("req_id")
 
-        if cutout_img != st.session_state.last_processed:
-            st.session_state.last_processed = cutout_img
-            st.session_state.drawing_cutout = cutout_img
+        if not st.session_state.api_key:
+            st.error("⚠️ No hay OpenAI API Key configurada. Ingrésala arriba para sintetizar.")
+        elif req_id and req_id != st.session_state.last_req_id:
+            st.session_state.last_req_id = req_id
+            st.session_state.drawing_cutout = data.get("cutout")
 
-            with st.spinner("⚡ Calculando Cinemática Inversa y Componiendo Melodía Algorítmica..."):
-                client = OpenAI(api_key=api_key)
-                base64_data = vision_img.split(",")[1]
+            with st.spinner("⚡ Calculando Cinemática Inversa y Melodía Algorítmica..."):
+                client = OpenAI(api_key=st.session_state.api_key)
+                base64_data = data.get("vision").split(",")[1]
 
                 prompt = """
                 Eres el Diseñador Principal de un Laboratorio de Robótica Cinemática y Compositor de Música Electrónica.
                 Analiza el dibujo espacial:
-                1. Clasifica el objeto o entidad con nombre de ingeniería (ej: "CYBER-DRAGON // AERO-V").
-                2. Escribe una historia cautivadora y fantástica en ESPAÑOL (3 oraciones máximo).
-                3. Define la cinemática de ensamblaje para un brazo robótico de 5 ejes:
-                   - kinematics: [anguloBase, anguloHombro, anguloCodo, anguloMuñeca, anguloHerramienta] (de 15 a 165 grados).
+                1. Clasifica el objeto con nombre de ingeniería (ej: "CYBER-CAT // MK-IV").
+                2. Escribe una historia cautivadora en ESPAÑOL (máximo 3 oraciones).
+                3. Define la cinemática de ensamblaje para un brazo de 5 ejes:
+                   - kinematics: [anguloBase, anguloHombro, anguloCodo, anguloMuñeca, anguloHerramienta] (de 20 a 160 grados).
                    - primary_rgb: [R, G, B] color láser principal.
-                   - sec_rgb: [R, G, B] color espectral secundario.
+                   - sec_rgb: [R, G, B] color secundario.
                 4. COMPÓN UNA MELODÍA ORIGINAL:
                    Genera un array "melody" de 12 a 16 notas musicales (f: frecuencia en Hz [260 a 1100], d: duración en ms [100 a 350]).
-                   ¡Compón un motivo musical armónico y pegadizo que refleje la emoción del objeto (pentatónico épico, modo dórico o chiptune vivaz)!
+                   ¡Debe ser una melodía pegadiza acorde a la figura!
                 5. 4 keyframes CSS transform (x, y, scale, rotate) para el holograma.
 
                 Responde ESTRICTAMENTE en JSON con esta estructura exacta:
                 {
-                  "model": "CYBER-DRAGON",
-                  "material": "AERO-TITANIUM",
-                  "interpretation": "Dragón cibernético alado",
-                  "title": "Protocolo Ícaro",
-                  "story_spanish": "En la forja estelar, el autómata cobró aliento mediante impulsos de plasma. Sus alas extendidas refractaron la luz del reactor antes de elevarse al vacío cósmico. Su vuelo inauguró una nueva era para los navegantes celestes.",
+                  "model": "CYBER-ENTITY",
+                  "material": "AERO-ALLOY",
+                  "interpretation": "descripción",
+                  "title": "Protocolo",
+                  "story_spanish": "Cuento en español...",
                   "primary_rgb": [0, 240, 255],
                   "sec_rgb": [255, 90, 0],
                   "kinematics": [120, 65, 140, 85, 130],
@@ -189,7 +183,7 @@ if canvas_output and api_key:
                 story_json = json.loads(completion.choices[0].message.content)
                 st.session_state.story_data = story_json
 
-                # High-fidelity narration synthesis
+                # Narration Audio
                 tts = client.audio.speech.create(
                     model="tts-1",
                     voice="onyx",
@@ -197,7 +191,7 @@ if canvas_output and api_key:
                 )
                 st.session_state.audio_bytes = tts.content
 
-                # Dispatch Retained MQTT Payload
+                # MQTT Retained Dispatch
                 try:
                     publish.single(
                         MQTT_TOPIC,
@@ -207,7 +201,10 @@ if canvas_output and api_key:
                         keepalive=10
                     )
                 except Exception as mqtt_err:
-                    st.warning(f"MQTT Status: {mqtt_err}")
+                    st.warning(f"MQTT: {mqtt_err}")
+                
+                st.rerun()
+
     except Exception as e:
         st.error(f"Error en el Taller Cinemático: {e}")
 
@@ -219,7 +216,7 @@ with col_stage:
         
         st.markdown(f"### {story.get('title')}")
         st.markdown(f"""
-        <div class="mono" style="font-size: 0.8rem; color: #38bdf8; margin-bottom: 10px;">
+        <div class="mono" style="font-size: 0.8rem; color: #38bdf8; margin-bottom: 8px;">
           CLASSIFICATION: {story.get('model')} // MATERIAL: {story.get('material', 'PLASMA')}
         </div>
         """, unsafe_allow_html=True)
@@ -280,8 +277,8 @@ with col_stage:
                 <div style="font-size: 1.05rem; font-weight: 700; color: #f1f5f9;">CELDA ROBÓTICA EN ESPERA</div>
                 <div class="mono" style="font-size: 0.8rem; color: #64748b; max-width: 320px; margin-top: 6px;">
                   1. Activa el sensor óptico en el panel izquierdo.<br>
-                  2. Traza un vector o figura en el aire con los dedos.<br>
-                  3. Ejecuta "SINTETIZAR" para ensamblar el autómata.
+                  2. Traza una figura con los dedos.<br>
+                  3. Ejecuta "⚡ SINTETIZAR OBJETO".
                 </div>
             </div>
             """,
@@ -289,14 +286,24 @@ with col_stage:
         )
 
 # ---------------------------------------------------------
-# Embedded Robotic Cell (Diagram View Only)
+# Dynamic Wokwi Embed (Supports Your ProyectozFinalz ID)
 # ---------------------------------------------------------
 st.markdown("---")
-col_title, col_link = st.columns([0.8, 0.2])
-with col_title:
-    st.markdown("##### 🦾 CÉLULA ROBÓTICA CINEMÁTICA EN VIVO // WOKWI ESP32")
-    st.caption("🟢 Sincronizado por MQTT. Haz clic en ▶️ en el simulador si está detenido.")
-with col_link:
-    st.link_button("↗️ Abrir en Wokwi", "https://wokwi.com/projects/479816492813091841")
+col_info, col_set_id = st.columns([0.6, 0.4])
 
-components.iframe(LIVE_WOKWI_URL, height=620, scrolling=True)
+with col_info:
+    st.markdown("##### 🦾 CÉLULA ROBÓTICA CINEMÁTICA EN VIVO // WOKWI ESP32")
+    st.caption("🟢 Sincronizado por MQTT. Presiona ▶️ en el simulador si está detenido.")
+
+with col_set_id:
+    new_wokwi_id = st.text_input(
+        "ID del Proyecto Wokwi:", 
+        value=st.session_state.wokwi_id,
+        help="Copia el número al final de la URL en tu pestaña de Wokwi (ej: 479816492813091841)"
+    )
+    if new_wokwi_id != st.session_state.wokwi_id:
+        st.session_state.wokwi_id = new_wokwi_id.strip()
+        st.rerun()
+
+embed_url = f"https://wokwi.com/projects/{st.session_state.wokwi_id}?view=diagram"
+components.iframe(embed_url, height=620, scrolling=True)
