@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
       padding: 0;
       background: transparent;
-      color: #ede6de;
+      color: #f1f5f9;
       font-family: 'Plus Jakarta Sans', sans-serif;
       text-align: center;
       display: flex;
@@ -20,11 +20,11 @@
       position: relative;
       width: 560px;
       height: 380px;
-      border-radius: 12px;
+      border-radius: 16px;
       overflow: hidden;
-      background: #181716;
-      border: 1px solid #2e2b27;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      background: #0d0a1f;
+      border: 1px solid rgba(192, 132, 252, 0.35);
+      box-shadow: 0 0 25px rgba(112, 0, 255, 0.25);
     }
     #webcam {
       position: absolute;
@@ -38,35 +38,53 @@
       top: 0; left: 0;
       width: 560px; height: 380px;
     }
-    #camCanvas { z-index: 1; transform: scaleX(-1); opacity: 0.85; }
+    #camCanvas { z-index: 1; transform: scaleX(-1); opacity: 0.88; filter: contrast(1.05); }
     #paintCanvas { z-index: 2; }
     #cursorCanvas { z-index: 3; pointer-events: none; }
     
     .toolbar {
       margin-top: 14px;
       display: flex;
-      gap: 10px;
+      gap: 12px;
       justify-content: center;
+      align-items: center;
     }
     button {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      padding: 8px 18px;
+      padding: 9px 20px;
       font-size: 13px;
       font-weight: 600;
-      border-radius: 8px;
+      border-radius: 30px;
       border: 1px solid transparent;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    .btn-start { background: #2b2824; color: #ede6de; border-color: #3d3934; }
-    .btn-clear { background: #201e1c; color: #9c9389; border-color: #2e2b27; }
-    .btn-send { background: #d97745; color: #fff; }
-    button:hover { filter: brightness(1.12); }
+    .btn-start { 
+      background: rgba(30, 27, 75, 0.85); 
+      color: #c084fc; 
+      border-color: rgba(192, 132, 252, 0.4); 
+    }
+    .btn-clear { 
+      background: rgba(15, 23, 42, 0.85); 
+      color: #94a3b8; 
+      border-color: rgba(148, 163, 184, 0.2); 
+    }
+    .btn-send { 
+      background: linear-gradient(135deg, #c084fc 0%, #38bdf8 100%); 
+      color: #0b081d; 
+      font-weight: 700;
+      box-shadow: 0 0 20px rgba(192, 132, 252, 0.45);
+    }
+    button:hover { 
+      filter: brightness(1.15); 
+      transform: translateY(-2px) scale(1.02); 
+    }
     #status {
       margin-top: 8px;
-      font-size: 12px;
-      color: #9c9389;
+      font-size: 12.5px;
+      color: #cbd5e1;
       min-height: 18px;
+      text-shadow: 0 0 8px rgba(192, 132, 252, 0.5);
     }
   </style>
 </head>
@@ -79,11 +97,11 @@
   </div>
 
   <div class="toolbar">
-    <button class="btn-start" id="startBtn" onclick="startCamera()">Activar cámara</button>
-    <button class="btn-clear" onclick="clearCanvas()">Limpiar</button>
-    <button class="btn-send" onclick="sendToStreamlit()">Dar vida</button>
+    <button class="btn-start" id="startBtn" onclick="startCamera()">🪄 Activar espejo</button>
+    <button class="btn-clear" onclick="clearCanvas()">Borrar trazo</button>
+    <button class="btn-send" onclick="sendToStreamlit()">✨ Tejer en la historia</button>
   </div>
-  <div id="status">Presiona "Activar cámara" para comenzar</div>
+  <div id="status">Toca "Activar espejo" para encender la luz mágica ✨</div>
 
   <script>
     function sendStreamlitMsg(type, data = {}) {
@@ -91,10 +109,10 @@
     }
     function notifyReady() {
       sendStreamlitMsg("streamlit:componentReady", { apiVersion: 1 });
-      sendStreamlitMsg("streamlit:setFrameHeight", { height: 465 });
+      sendStreamlitMsg("streamlit:setFrameHeight", { height: 470 });
     }
     window.addEventListener("message", (e) => {
-      if (e.data.type === "streamlit:render") sendStreamlitMsg("streamlit:setFrameHeight", { height: 465 });
+      if (e.data.type === "streamlit:render") sendStreamlitMsg("streamlit:setFrameHeight", { height: 470 });
     });
     notifyReady();
     window.addEventListener("load", notifyReady);
@@ -134,7 +152,7 @@
       }
       try {
         startBtn.disabled = true;
-        statusDiv.innerText = "Conectando cámara...";
+        statusDiv.innerText = "Despertando el espejo mágico...";
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
@@ -146,7 +164,7 @@
 
         isRunning = true;
         startBtn.style.display = "none";
-        statusDiv.innerText = "Pellizca el índice y el pulgar para dibujar en el aire";
+        statusDiv.innerText = "✨ ¡Espejo listo! Junta índice y pulgar para pintar con luz";
         requestAnimationFrame(renderLoop);
       } catch (err) {
         startBtn.disabled = false;
@@ -168,7 +186,7 @@
 
     function clearCanvas() {
       pCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
-      statusDiv.innerText = "Lienzo limpio.";
+      statusDiv.innerText = "Lienzo limpio como una noche despejada 🌌";
     }
 
     function getBoundingBox(ctx, w, h) {
@@ -199,7 +217,7 @@
     function sendToStreamlit() {
       const box = getBoundingBox(pCtx, paintCanvas.width, paintCanvas.height);
       if (!box) {
-        statusDiv.innerText = "Traza primero una figura en el aire.";
+        statusDiv.innerText = "Dibuja primero tu figura pellizcando los dedos ✨";
         return;
       }
 
@@ -216,7 +234,7 @@
       vCtx.drawImage(cCanvas, 0, 0);
       const visionBase64 = vCanvas.toDataURL('image/png');
 
-      // Unique ID triggers Streamlit instantly on each click
+      // Unique ID triggers execution instantly
       sendStreamlitMsg("streamlit:setComponentValue", {
         value: JSON.stringify({
           cutout: cutoutBase64,
@@ -224,7 +242,7 @@
           id: String(Date.now())
         })
       });
-      statusDiv.innerText = "Enviado al escenario...";
+      statusDiv.innerText = "✨ ¡Tejiendo tu nuevo capítulo en el cuento!...";
     }
 
     function onResults(results) {
@@ -244,21 +262,24 @@
         const y = ((thumb.y + index.y) / 2) * paintCanvas.height;
         const isPinching = Math.hypot(thumb.x - index.x, thumb.y - index.y) < 0.07;
 
+        // Glowing Star Pointer
         curCtx.beginPath();
-        curCtx.arc(x, y, isPinching ? 6 : 8, 0, 2 * Math.PI);
-        curCtx.fillStyle = isPinching ? "#e08a58" : "rgba(237, 230, 222, 0.4)";
+        curCtx.arc(x, y, isPinching ? 7 : 9, 0, 2 * Math.PI);
+        curCtx.fillStyle = isPinching ? "#38bdf8" : "rgba(192, 132, 252, 0.6)";
         curCtx.fill();
-        curCtx.strokeStyle = isPinching ? "#ffffff" : "#e08a58";
-        curCtx.lineWidth = 1.5;
+        curCtx.strokeStyle = "#ffffff";
+        curCtx.lineWidth = 2;
+        curCtx.shadowColor = "#38bdf8";
+        curCtx.shadowBlur = 12;
         curCtx.stroke();
 
         if (isPinching) {
-          statusDiv.innerText = "Dibujando...";
+          statusDiv.innerText = "✍️ Dibujando con luz de estrellas...";
           if (prevPoint) {
-            pCtx.strokeStyle = '#e08a58';
-            pCtx.shadowColor = '#c4703f';
-            pCtx.shadowBlur = 10;
-            pCtx.lineWidth = 5;
+            pCtx.strokeStyle = '#38bdf8';
+            pCtx.shadowColor = '#c084fc';
+            pCtx.shadowBlur = 14;
+            pCtx.lineWidth = 5.5;
             pCtx.lineCap = 'round';
             pCtx.lineJoin = 'round';
             pCtx.beginPath();
@@ -268,7 +289,7 @@
           }
           prevPoint = { x, y };
         } else {
-          statusDiv.innerText = "Pellizca el índice y el pulgar para dibujar";
+          statusDiv.innerText = "🖐️ Mano lista. Junta índice y pulgar para pintar";
           prevPoint = null;
         }
       } else {
