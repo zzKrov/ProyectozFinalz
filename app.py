@@ -16,12 +16,17 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Luminous Theme & Interactive Companion Drawer Styling
+# Luminous Theme & Guaranteed-Visible Pure CSS Drawer
 # ---------------------------------------------------------
 magical_theme = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&family=JetBrains+Mono:wght@500&display=swap');
 
+/* Prevent Streamlit header from blocking fixed UI elements */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    z-index: 10 !important;
+}
 [data-testid="collapsedControl"], section[data-testid="stSidebar"], #MainMenu, footer {
     display: none !important;
 }
@@ -185,68 +190,115 @@ html, body, [data-testid="stAppViewContainer"] {
     filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 35px rgba(192, 132, 252, 0.7));
 }
 
-/* Floating Drawer Trigger Button (Top Right Corner) */
-#report-trigger-btn {
+div.stButton > button {
+    background: rgba(30, 27, 75, 0.7) !important;
+    color: #ede6de !important;
+    border: 1px solid rgba(192, 132, 252, 0.3) !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    padding: 4px 12px !important;
+}
+
+/* ------------------------------------------------------------- */
+/* PURE CSS DRAWER (IMMUNE TO JAVASCRIPT BLOCKING OR CSP)       */
+/* ------------------------------------------------------------- */
+.drawer-checkbox {
+    display: none !important;
+}
+
+/* Floating Corner Pill */
+.drawer-trigger-btn {
     position: fixed;
     top: 14px;
-    right: 22px;
-    z-index: 99998;
-    background: linear-gradient(135deg, rgba(192, 132, 252, 0.25), rgba(56, 189, 248, 0.25));
+    right: 20px;
+    z-index: 10000000 !important;
+    background: linear-gradient(135deg, rgba(192, 132, 252, 0.35), rgba(56, 189, 248, 0.35)) !important;
+    border: 1.5px solid rgba(192, 132, 252, 0.8) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: #ffffff !important;
+    padding: 8px 18px !important;
+    border-radius: 30px !important;
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    box-shadow: 0 0 25px rgba(192, 132, 252, 0.6) !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+}
+.drawer-trigger-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 35px rgba(56, 189, 248, 0.8) !important;
+}
+
+/* Inline Header Button Backup */
+.drawer-inline-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    background: rgba(30, 27, 75, 0.8);
     border: 1px solid rgba(192, 132, 252, 0.5);
-    backdrop-filter: blur(12px);
-    color: #f8fafc;
-    padding: 7px 16px;
-    border-radius: 30px;
+    color: #c084fc;
+    padding: 5px 14px;
+    border-radius: 20px;
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 0 18px rgba(192, 132, 252, 0.3);
-    transition: all 0.25s ease;
-    display: flex;
-    align-items: center;
-    gap: 7px;
+    transition: all 0.2s;
+    user-select: none;
 }
-#report-trigger-btn:hover {
-    transform: translateY(-2px) scale(1.03);
+.drawer-inline-btn:hover {
+    color: #38bdf8;
     border-color: #38bdf8;
-    box-shadow: 0 0 25px rgba(56, 189, 248, 0.5);
+    background: rgba(56, 189, 248, 0.15);
 }
 
-/* Side Menu / Drawer */
-#report-drawer-backdrop {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(5, 4, 13, 0.6);
-    backdrop-filter: blur(6px);
-    z-index: 99998;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.35s ease;
-}
-#report-drawer-backdrop.open {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-#report-drawer {
+/* Sliding Panel */
+.drawer-panel {
     position: fixed;
     top: 0;
     right: 0;
     width: 480px;
     max-width: 90vw;
     height: 100vh;
-    background: rgba(18, 14, 40, 0.94);
-    backdrop-filter: blur(24px);
-    border-left: 1px solid rgba(192, 132, 252, 0.4);
-    box-shadow: -10px 0 45px rgba(0, 0, 0, 0.7);
-    z-index: 99999;
+    background: rgba(15, 11, 33, 0.96) !important;
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border-left: 1px solid rgba(192, 132, 252, 0.4) !important;
+    box-shadow: -15px 0 55px rgba(0, 0, 0, 0.85) !important;
+    z-index: 10000000 !important;
     transform: translateX(105%);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
-#report-drawer.open {
-    transform: translateX(0);
+
+/* Backdrop */
+.drawer-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(5, 4, 13, 0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 9999999 !important;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+
+/* PURE CSS TOGGLE ON CHECKED */
+.drawer-checkbox:checked ~ .drawer-panel {
+    transform: translateX(0) !important;
+}
+.drawer-checkbox:checked ~ .drawer-backdrop {
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
 .drawer-header {
@@ -264,9 +316,8 @@ html, body, [data-testid="stAppViewContainer"] {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
-.drawer-close-btn {
+.drawer-close-label {
     background: rgba(255, 255, 255, 0.08);
-    border: none;
     color: #94a3b8;
     font-size: 1.2rem;
     border-radius: 50%;
@@ -277,10 +328,11 @@ html, body, [data-testid="stAppViewContainer"] {
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    user-select: none;
 }
-.drawer-close-btn:hover {
+.drawer-close-label:hover {
     color: #fff;
-    background: rgba(244, 63, 94, 0.3);
+    background: rgba(244, 63, 94, 0.35);
 }
 
 .drawer-content {
@@ -313,11 +365,11 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-top: 0;
 }
 
-/* Interactive Companion Badges inside the Report */
+/* Interactive Companion Badges */
 .companion-link {
     display: inline-block;
     padding: 2px 9px;
-    margin: 2px 3px;
+    margin: 3px 2px;
     border-radius: 6px;
     font-size: 0.82rem;
     font-weight: 600;
@@ -327,22 +379,22 @@ html, body, [data-testid="stAppViewContainer"] {
 .companion-link.cyan {
     background: rgba(56, 189, 248, 0.15);
     color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.4);
+    border: 1px solid rgba(56, 189, 248, 0.45);
 }
 .companion-link.red {
     background: rgba(244, 63, 94, 0.15);
     color: #fb7185;
-    border: 1px solid rgba(244, 63, 94, 0.4);
+    border: 1px solid rgba(244, 63, 94, 0.45);
 }
 .companion-link.gold {
     background: rgba(251, 191, 36, 0.15);
     color: #fde047;
-    border: 1px solid rgba(251, 191, 36, 0.4);
+    border: 1px solid rgba(251, 191, 36, 0.45);
 }
 .companion-link.purple {
     background: rgba(192, 132, 252, 0.15);
     color: #c084fc;
-    border: 1px solid rgba(192, 132, 252, 0.4);
+    border: 1px solid rgba(192, 132, 252, 0.45);
 }
 .companion-link:hover {
     transform: translateY(-1px) scale(1.05);
@@ -359,6 +411,7 @@ html, body, [data-testid="stAppViewContainer"] {
     padding: 14px;
     text-align: center;
     transition: border-color 0.2s;
+    box-sizing: border-box;
 }
 .image-slot:hover {
     border-color: #38bdf8;
@@ -369,22 +422,26 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-top: 6px;
 }
 </style>
+
 <div class="stars-overlay"></div>
 
-<!-- Top-Right Floating Drawer Button -->
-<button id="report-trigger-btn" onclick="toggleReportDrawer()">
-    <span>📋</span>
-    <span>Informe del Proyecto</span>
-</button>
+<!-- 1. Pure CSS Drawer Checkbox -->
+<input type="checkbox" id="drawer-toggle" class="drawer-checkbox">
 
-<!-- Slide-Out Backdrop -->
-<div id="report-drawer-backdrop" onclick="toggleReportDrawer()"></div>
+<!-- 2. Guaranteed-Visible Top-Right Floating Pill -->
+<label for="drawer-toggle" class="drawer-trigger-btn">
+    <span>🟢</span>
+    <span>📋 Informe del Proyecto</span>
+</label>
 
-<!-- Slide-Out Drawer Panel -->
-<div id="report-drawer">
+<!-- 3. Clickable Backdrop to close -->
+<label for="drawer-toggle" class="drawer-backdrop"></label>
+
+<!-- 4. Sliding Panel with Exact Concise Report -->
+<div class="drawer-panel">
     <div class="drawer-header">
         <div class="drawer-title">Informe & Guía Interactiva</div>
-        <button class="drawer-close-btn" onclick="toggleReportDrawer()">✕</button>
+        <label for="drawer-toggle" class="drawer-close-label">✕</label>
     </div>
     <div class="drawer-content">
         <div style="font-size: 0.78rem; color: #a855f7; font-weight: 600; margin-bottom: 12px;">
@@ -396,7 +453,7 @@ html, body, [data-testid="stAppViewContainer"] {
             Es un <b>teatro interactivo que mezcla lo digital con lo físico</b>. Dibujas figuras en el aire con tus dedos frente a la cámara web, y el sistema convierte ese dibujo en un cuento narrado por voz, le compone una melodía musical original y hace que un escenario físico en miniatura (simulado en Wokwi) actúe la escena abriendo telones y moviendo piezas en tiempo real.
         </p>
 
-        <!-- Image Slot 1: Arquitectura General -->
+        <!-- Image Slot 1: Flujo General -->
         <div class="image-slot">
             <div style="font-size: 1.5rem;">🔮 ──▶ 🎭</div>
             <div style="font-weight: 600; font-size: 0.85rem; color: #cbd5e1;">Espacio para Imagen 1: Flujo Multimodal</div>
@@ -404,32 +461,32 @@ html, body, [data-testid="stAppViewContainer"] {
         </div>
 
         <div class="drawer-section-title">⚙️ ¿Cómo funciona?</div>
-        <ol style="padding-left: 20px; margin-top: 4px;">
-            <li style="margin-bottom: 8px;">
+        <ol style="padding-left: 18px; margin-top: 4px;">
+            <li style="margin-bottom: 10px;">
                 <b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.
                 <br>
-                <span class="companion-link cyan" onmouseenter="highlightTarget('canvas', 'cyan')" onmouseleave="unhighlightTarget('canvas')">
+                <span class="companion-link cyan" data-target="canvas" data-color="cyan">
                     🔍 Resaltar Lienzo de Dibujo
                 </span>
             </li>
-            <li style="margin-bottom: 8px;">
+            <li style="margin-bottom: 10px;">
                 <b>La IA interpreta y crea:</b>
                 <ul style="padding-left: 16px; margin-top: 4px;">
-                    <li><b>Reconoce la figura</b> y escribe el siguiente capítulo (recordando capítulos previos para dar continuidad argumental).</li>
-                    <li><b>Narra la historia</b> con voz humana expresiva (<span class="companion-link purple" onmouseenter="highlightTarget('story', 'purple')" onmouseleave="unhighlightTarget('story')">tts-1-hd con voz modulada</span>).</li>
-                    <li><b>Compone una melodía real</b> (notas afinadas en escala pentatónica y ritmo, no ruido al azar).</li>
+                    <li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li>
+                    <li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple" data-target="story" data-color="purple">tts-1-hd con voz modulada</span>).</li>
+                    <li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li>
                 </ul>
             </li>
-            <li style="margin-bottom: 8px;">
+            <li style="margin-bottom: 10px;">
                 <b>El escenario cobra vida:</b>
                 <ul style="padding-left: 16px; margin-top: 4px;">
-                    <li>Tu dibujo aparece recortado flotando y bailando sobre el teatro.</li>
-                    <li>Por internet (vía MQTT), la placa ESP32 en Wokwi recibe la orden: abre los telones, enciende las luces del color del cuento, eleva al personaje y toca la melodía con su zumbador como cajita de música.</li>
+                    <li>En tu pantalla, tu dibujo aparece recortado flotando y bailando sobre el escenario.</li>
+                    <li>Por internet (vía MQTT), la placa ESP32 en Wokwi recibe la orden: abre los telones, enciende las luces del color del cuento, eleva al personaje y toca la melodía con su zumbador como una cajita de música.</li>
                 </ul>
             </li>
         </ol>
 
-        <!-- Image Slot 2: Escenario y Actuadores -->
+        <!-- Image Slot 2: Circuito y Mecanismo -->
         <div class="image-slot">
             <div style="font-size: 1.5rem;">🎪 🦾 🎼</div>
             <div style="font-weight: 600; font-size: 0.85rem; color: #cbd5e1;">Espacio para Imagen 2: Mecanismo Wokwi</div>
@@ -437,32 +494,32 @@ html, body, [data-testid="stAppViewContainer"] {
         </div>
 
         <div class="drawer-section-title">🦾 ¿Qué hace cada servomotor exactamente?</div>
-        <ul style="padding-left: 20px; margin-top: 4px;">
-            <li style="margin-bottom: 8px;">
-                <b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Al iniciar la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar al concluir el acto musical.
+        <ul style="padding-left: 18px; margin-top: 4px;">
+            <li style="margin-bottom: 10px;">
+                <b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.
                 <br>
-                <span class="companion-link red" onmouseenter="highlightTarget('stage', 'red')" onmouseleave="unhighlightTarget('stage')">
+                <span class="companion-link red" data-target="stage" data-color="red">
                     🎭 Resaltar Telones en Escenario
                 </span>
             </li>
-            <li style="margin-bottom: 8px;">
-                <b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.
+            <li style="margin-bottom: 10px;">
+                <b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.
                 <br>
-                <span class="companion-link gold" onmouseenter="highlightTarget('stage', 'gold')" onmouseleave="unhighlightTarget('stage')">
+                <span class="companion-link gold" data-target="stage" data-color="gold">
                     🚀 Resaltar Elevador Mecánico
                 </span>
             </li>
-            <li style="margin-bottom: 8px;">
+            <li style="margin-bottom: 10px;">
                 <b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).
                 <br>
-                <span class="companion-link cyan" onmouseenter="highlightTarget('stage', 'cyan')" onmouseleave="unhighlightTarget('stage')">
+                <span class="companion-link cyan" data-target="stage" data-color="cyan">
                     🌪️ Resaltar Máquina de Viento
                 </span>
             </li>
         </ul>
 
         <div class="drawer-section-title">💡 El resto del hardware:</div>
-        <ul style="padding-left: 20px; margin-top: 4px;">
+        <ul style="padding-left: 18px; margin-top: 4px;">
             <li style="margin-bottom: 6px;">
                 <b>Luces LED (Anillo y Tira):</b> Iluminan el arco del cielo y el suelo con el color y brillo que elija la IA para la escena.
             </li>
@@ -470,7 +527,7 @@ html, body, [data-testid="stAppViewContainer"] {
                 <b>Pantalla OLED:</b> Muestra el título de la obra y el nombre de la partitura que está sonando.
             </li>
             <li style="margin-bottom: 6px;">
-                <b>Zumbador:</b> Toca la partitura que compuso la IA nota por nota a un volumen suave como cajita de música.
+                <b>Zumbador:</b> Toca la partitura que compuso la IA nota por nota a un volumen suave.
             </li>
         </ul>
 
@@ -479,35 +536,6 @@ html, body, [data-testid="stAppViewContainer"] {
         </div>
     </div>
 </div>
-
-<!-- Pure Parent DOM Companion Highlighter Script -->
-<img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>" 
-     style="display:none;" 
-     onerror="(function(){
-        window.toggleReportDrawer = function() {
-            var d = document.getElementById('report-drawer');
-            var b = document.getElementById('report-drawer-backdrop');
-            if (d && b) {
-                d.classList.toggle('open');
-                b.classList.toggle('open');
-            }
-        };
-
-        window.highlightTarget = function(targetKey, color) {
-            var el = document.querySelector('.target-' + targetKey);
-            if (el) {
-                el.classList.remove('highlight-active-cyan', 'highlight-active-red', 'highlight-active-gold', 'highlight-active-purple');
-                el.classList.add('highlight-active-' + color);
-            }
-        };
-
-        window.unhighlightTarget = function(targetKey) {
-            var el = document.querySelector('.target-' + targetKey);
-            if (el) {
-                el.classList.remove('highlight-active-cyan', 'highlight-active-red', 'highlight-active-gold', 'highlight-active-purple');
-            }
-        };
-     })()" />
 """
 st.markdown(magical_theme, unsafe_allow_html=True)
 
@@ -521,7 +549,7 @@ MQTT_TOPIC = "air_draw_story/stage_cue"
 def send_stage_cue(payload_dict):
     prev_timeout = socket.getdefaulttimeout()
     try:
-        socket.setdefaulttimeout(3.0)
+        socket.setdefaulttimeout(3.5)
         publish.single(
             MQTT_TOPIC,
             json.dumps(payload_dict),
@@ -556,12 +584,18 @@ if "narrator_voice" not in st.session_state:
     st.session_state.narrator_voice = "coral"
 
 # ---------------------------------------------------------
-# Header & Settings Drawer
+# Header with Inline Button Backup
 # ---------------------------------------------------------
 st.markdown("""
 <div class="header-glow">
   <div class="app-title">🎭 El Pequeño Teatro de las Historias Vivas ✨</div>
   <div class="app-subtitle">Dibuja una figura en el aire. La IA compone una partitura original y narra tu aventura mientras el teatro cobra vida.</div>
+  <div>
+    <label for="drawer-toggle" class="drawer-inline-btn">
+      <span>📖</span>
+      <span>Ver Informe & Guía Interactiva</span>
+    </label>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -861,3 +895,43 @@ if len(st.session_state.story_chapters) > 1:
             if ch.get("cutout"):
                 st.image(ch["cutout"], width=90)
             st.caption(ch["text"])
+
+# ---------------------------------------------------------
+# Companion Highlighter Bridge (Hooks Hover to DOM Outlines)
+# ---------------------------------------------------------
+components.html("""
+<script>
+function initCompanion() {
+    try {
+        const pDoc = window.parent.document;
+        if (!pDoc) return;
+        
+        const links = pDoc.querySelectorAll('.companion-link');
+        links.forEach(link => {
+            if (link.dataset.bound) return;
+            link.dataset.bound = "true";
+
+            link.addEventListener('mouseenter', () => {
+                const target = link.getAttribute('data-target');
+                const color = link.getAttribute('data-color') || 'cyan';
+                const el = pDoc.querySelector('.target-' + target);
+                if (el) {
+                    el.classList.remove('highlight-active-cyan', 'highlight-active-red', 'highlight-active-gold', 'highlight-active-purple');
+                    el.classList.add('highlight-active-' + color);
+                }
+            });
+
+            link.addEventListener('mouseleave', () => {
+                const target = link.getAttribute('data-target');
+                const color = link.getAttribute('data-color') || 'cyan';
+                const el = pDoc.querySelector('.target-' + target);
+                if (el) {
+                    el.classList.remove('highlight-active-' + color);
+                }
+            });
+        });
+    } catch(e) {}
+}
+setInterval(initCompanion, 800);
+</script>
+""", height=0)
