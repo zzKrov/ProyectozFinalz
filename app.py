@@ -101,6 +101,18 @@ html, body, [data-testid="stAppViewContainer"] {
     border: 1px solid rgba(56, 189, 248, 0.35);
     margin-bottom: 6px;
 }
+.music-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(192, 132, 252, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(192, 132, 252, 0.35);
+    margin-bottom: 6px;
+    margin-left: 6px;
+}
 .story-body {
     font-family: 'Playfair Display', serif;
     font-size: 1.05rem;
@@ -150,7 +162,6 @@ WOKWI_PROJECT_ID = "479816492813091841"
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_TOPIC = "air_draw_story/stage_cue"
 
-# Safe synchronous MQTT publisher with timeout (guarantees packet delivery)
 def send_stage_cue(payload_dict):
     prev_timeout = socket.getdefaulttimeout()
     try:
@@ -163,7 +174,7 @@ def send_stage_cue(payload_dict):
             retain=True,
             keepalive=5
         )
-        st.toast("📡 ¡Escenario Wokwi sincronizado!", icon="🎭")
+        st.toast("📡 ¡Partitura transmitida a Wokwi!", icon="🎼")
         return True
     except Exception as e:
         st.warning(f"Aviso de conexión con el escenario: {e}")
@@ -188,11 +199,10 @@ if "current_cutout" not in st.session_state:
 st.markdown("""
 <div class="header-glow">
   <div class="app-title">🎭 El Pequeño Teatro de las Historias Vivas ✨</div>
-  <div class="app-subtitle">Dibuja una figura en el aire. Con cada trazo, los telones se abren, la música suena y tu cuento continúa.</div>
+  <div class="app-subtitle">Dibuja una figura en el aire. La IA compone una partitura original en directo para que el teatro la interprete.</div>
 </div>
 """, unsafe_allow_html=True)
 
-# API Key input if not set
 if not st.session_state.api_key:
     key_input = st.text_input("🔑 OpenAI API Key Requerida:", type="password", placeholder="sk-...")
     if key_input:
@@ -211,7 +221,7 @@ with col_draw:
     canvas_output = air_canvas(default=None, key="air_canvas_ui")
 
 # ---------------------------------------------------------
-# Sequential Storytelling Processing (Continuity Engine)
+# Sequential Storytelling & Live Music Composition Engine
 # ---------------------------------------------------------
 if canvas_output:
     try:
@@ -225,7 +235,7 @@ if canvas_output:
             vision_raw = data.get("vision", "")
             base64_data = vision_raw.split(",")[1] if "," in vision_raw else vision_raw
 
-            with st.spinner(f"✨ Creando el Capítulo {current_chapter_num} y componiendo la melodía..."):
+            with st.spinner(f"🎼 Componiendo partitura original y tejiendo el Capítulo {current_chapter_num}..."):
                 client = OpenAI(api_key=st.session_state.api_key)
 
                 history_prompt = ""
@@ -237,41 +247,52 @@ if canvas_output:
                     history_prompt = "Este es el comienzo de una nueva aventura mágica.\n"
 
                 prompt = f"""
-                Analiza este nuevo dibujo hecho en el aire para un teatro de marionetas.
+                Eres simultáneamente el Narrador Literario y el Maestro Compositor Musical de un Teatro de Marionetas.
                 {history_prompt}
 
-                INSTRUCCIONES:
+                EL USUARIO ACABA DE DIBUJAR UN NUEVO ELEMENTO EN EL AIRE (mira la imagen adjunta).
+
+                INSTRUCCIONES DE NARRATIVA:
                 1. Identifica qué criatura u objeto dibujó el usuario.
-                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 3 oraciones sencillas y bonitas). Continuación directa y natural de los capítulos anteriores.
+                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 3 oraciones). Continuación directa y natural de los capítulos anteriores.
                 3. Asigna un título poético al capítulo (máx. 25 letras).
-                4. Colores y elevador para el escenario:
-                   - sky_rgb: [R, G, B] color del cielo/arco superior.
+
+                INSTRUCCIONES DE COMPOSICIÓN MUSICAL (PARTITURA ORIGINAL EXCLUSIVA):
+                4. Bautiza la pieza musical con un título temático (ej: "Danza del Viento", "Nana de la Luna", "Marcha del Heroe", "Sinfonia del Bosque").
+                5. Define el carácter emocional de la música.
+                6. COMPÓN UNA MELODÍA ORIGINAL Y ARMÓNICA de 10 a 14 notas musicales.
+                   REGLA OBLIGATORIA DE ARMONÍA (Para que suene como una hermosa cajita de música cálida, NUNCA ruido chillón):
+                   - Usa EXCLUSIVAMENTE notas cálidas de la escala pentatónica en frecuencias estándar:
+                     G3: 196 Hz | A3: 220 Hz | B3: 247 Hz | C4: 262 Hz | D4: 294 Hz | E4: 330 Hz | F4: 349 Hz | G4: 392 Hz | A4: 440 Hz | C5: 523 Hz
+                     (Usa 0 para silencios/pausas rítmicas indispensables).
+                   - Duraciones en ms: 180 (rápida), 280 (media), 450 (reposo/final).
+                   - Crea un motivo melódico reconocible con inicio, desarrollo y reposo final en la tónica (C4=262 o G3=196).
+
+                7. Parámetros del escenario físico:
+                   - sky_rgb: [R, G, B] color del arco superior.
                    - foot_rgb: [R, G, B] color de las candilejas de suelo.
                    - intensity: brillo de 65 a 90.
                    - prop: elevación del atrezo (40 para terrestres, 90 para caminantes, 140 para voladores).
-                5. COMPOSICIÓN MUSICAL REAL (Melodía de cajita de música):
-                   Compón un motivo musical tierno y armónico de 8 a 12 notas.
-                   REGLA ESTRICTA DE AFINACIÓN: Usa ÚNICAMENTE estas frecuencias de la escala pentatónica mayor para que suene como música real y nunca como ruido:
-                   [262, 294, 330, 392, 440, 523, 587, 659, 784] Hz (usa 0 para silencios/pausas cortas).
-                   Duraciones estándar en ms: 180, 260 o 400.
 
-                Estructura JSON requerida:
+                Responde ÚNICAMENTE en JSON con esta estructura:
                 {{
                   "entity": "nombre del elemento",
                   "title": "Título del Capítulo",
                   "story_spanish": "Cuento en español...",
+                  "score_title": "Nombre de la Canción",
+                  "score_mood": "Carácter emocional de la música",
                   "sky_rgb": [90, 40, 220],
                   "foot_rgb": [255, 170, 50],
                   "intensity": 85,
                   "prop": 120,
                   "melody": [
-                    {{"f": 392, "d": 240}},
-                    {{"f": 440, "d": 240}},
-                    {{"f": 523, "d": 380}},
-                    {{"f": 659, "d": 240}},
-                    {{"f": 0, "d": 60}},
-                    {{"f": 587, "d": 240}},
-                    {{"f": 523, "d": 400}}
+                    {{"f": 262, "d": 280}},
+                    {{"f": 330, "d": 280}},
+                    {{"f": 392, "d": 450}},
+                    {{"f": 0, "d": 80}},
+                    {{"f": 440, "d": 260}},
+                    {{"f": 392, "d": 260}},
+                    {{"f": 330, "d": 450}}
                   ]
                 }}
                 """
@@ -282,7 +303,7 @@ if canvas_output:
                     messages=[
                         {
                             "role": "system",
-                            "content": "Eres un narrador de cuentos infantiles y compositor musical. Siempre respondes en formato JSON válido."
+                            "content": "Eres un narrador de cuentos infantiles y compositor musical para teatro mecánico. Siempre respondes en formato JSON válido."
                         },
                         {
                             "role": "user",
@@ -308,7 +329,7 @@ if canvas_output:
                 clean_json = match.group(0) if match else raw_content.strip()
                 chapter_data = json.loads(clean_json)
 
-                # Voice narration
+                # Narration Audio Synthesis
                 story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
                 tts = client.audio.speech.create(
                     model="tts-1",
@@ -325,6 +346,8 @@ if canvas_output:
                 st.session_state.story_chapters.append({
                     "num": current_chapter_num,
                     "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
+                    "score_title": chapter_data.get("score_title", "Melodía Mágica"),
+                    "score_mood": chapter_data.get("score_mood", "En cantador"),
                     "entity": chapter_data.get("entity", "Creación mágica"),
                     "text": story_text,
                     "cutout": cutout_img,
@@ -333,6 +356,7 @@ if canvas_output:
 
                 stage_payload = {
                     "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
+                    "score_title": chapter_data.get("score_title", "Melodía Mágica"),
                     "sky_rgb": chapter_data.get("sky_rgb", [90, 40, 220]),
                     "foot_rgb": chapter_data.get("foot_rgb", [255, 170, 50]),
                     "intensity": chapter_data.get("intensity", 85),
@@ -340,7 +364,7 @@ if canvas_output:
                     "melody": chapter_data.get("melody", [])
                 }
 
-                # Synchronous safe dispatch ensures the packet is delivered
+                # Deliver the new score directly to Wokwi
                 send_stage_cue(stage_payload)
                 st.rerun()
 
@@ -354,23 +378,25 @@ with col_stage:
     with col_btns:
         btn_c1, btn_c2, btn_c3 = st.columns(3)
         with btn_c1:
-            # Immediate Test Button: Verifies Wokwi reacts on demand
-            if st.button("🔔 Probar", help="Envía una señal de prueba para abrir telones y probar sonido"):
+            if st.button("🔔 Probar", help="Envía una partitura de prueba a Wokwi"):
                 test_cue = {
                     "title": "Acto de Prueba",
+                    "score_title": "Danza de Prueba",
                     "sky_rgb": [0, 240, 255],
                     "foot_rgb": [255, 120, 40],
                     "intensity": 90,
                     "prop": 135,
                     "melody": [
-                        {"f": 523, "d": 200},
-                        {"f": 659, "d": 200},
-                        {"f": 784, "d": 350}
+                        {"f": 262, "d": 260},
+                        {"f": 330, "d": 260},
+                        {"f": 392, "d": 380},
+                        {"f": 0,   "d": 80},
+                        {"f": 523, "d": 450}
                     ]
                 }
                 send_stage_cue(test_cue)
         with btn_c2:
-            if st.button("🔄 Sync", help="Fuerza a recargar la simulación"):
+            if st.button("🔄 Sync", help="Fuerza a recargar el simulador Wokwi"):
                 st.session_state.wokwi_session_token = int(time.time())
                 st.rerun()
         with btn_c3:
@@ -406,6 +432,7 @@ with col_stage:
         st.markdown(f"""
         <div class="story-card">
           <div class="chapter-badge">Capítulo {latest['num']} &bull; {latest['entity']}</div>
+          <div class="music-badge">🎼 {latest.get('score_title', 'Partitura')} ({latest.get('score_mood', 'Mágico')})</div>
           <div class="story-heading">{latest['title']}</div>
           <div class="story-body">{latest['text']}</div>
         </div>
@@ -418,7 +445,7 @@ with col_stage:
         <div class="story-card" style="text-align: center; padding: 24px;">
           <div style="font-size: 2rem; margin-bottom: 6px;">✨📜</div>
           <div style="color: #cbd5e1; font-weight: 500;">El teatro está en penumbra esperando la función</div>
-          <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Dibuja la primera criatura o paisaje para tocar las campanas y abrir el telón.</div>
+          <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Dibuja la primera criatura o paisaje para abrir el telón y escuchar su música original.</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -433,6 +460,7 @@ if len(st.session_state.story_chapters) > 1:
         col_idx = idx % 5
         with ch_cols[col_idx]:
             st.markdown(f"**Cap. {ch['num']}: {ch['title']}**")
+            st.caption(f"🎼 *{ch.get('score_title', 'Canción')}*")
             if ch.get("cutout"):
                 st.image(ch["cutout"], width=90)
             st.caption(ch["text"])
