@@ -18,11 +18,11 @@
     }
     #stage {
       position: relative;
-      width: 600px;
-      height: 440px;
+      width: 580px;
+      height: 420px;
       border-radius: 12px;
       overflow: hidden;
-      background: #1a1c23;
+      background: #161b22;
       border: 1px solid #30363d;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
@@ -31,18 +31,17 @@
       position: absolute;
       top: 0;
       left: 0;
-      width: 600px;
-      height: 440px;
+      width: 580px;
+      height: 420px;
     }
     #camCanvas { z-index: 1; transform: scaleX(-1); }
     #paintCanvas { z-index: 2; }
     #cursorCanvas { z-index: 3; pointer-events: none; }
     .toolbar {
-      margin-top: 12px;
+      margin-top: 10px;
       display: flex;
       gap: 10px;
       justify-content: center;
-      flex-wrap: wrap;
     }
     button {
       padding: 8px 16px;
@@ -58,53 +57,44 @@
     .btn-send { background: #1f6feb; color: white; }
     button:hover { opacity: 0.85; transform: scale(1.02); }
     #status {
-      margin-top: 8px;
-      font-size: 13px;
+      margin-top: 6px;
+      font-size: 12px;
       color: #e3b341;
-      min-height: 20px;
+      min-height: 18px;
     }
   </style>
 </head>
 <body>
   <div id="stage">
     <video id="webcam" playsinline autoplay muted></video>
-    <canvas id="camCanvas" width="600" height="440"></canvas>
-    <canvas id="paintCanvas" width="600" height="440"></canvas>
-    <canvas id="cursorCanvas" width="600" height="440"></canvas>
+    <canvas id="camCanvas" width="580" height="420"></canvas>
+    <canvas id="paintCanvas" width="580" height="420"></canvas>
+    <canvas id="cursorCanvas" width="580" height="420"></canvas>
   </div>
 
   <div class="toolbar">
     <button class="btn-start" id="startBtn" onclick="startCamera()">🎥 Iniciar Cámara</button>
     <button class="btn-clear" onclick="clearCanvas()">🗑️ Limpiar Trazo</button>
-    <button class="btn-send" onclick="sendToStreamlit()">✨ Enviar Dibujo a OpenAI</button>
+    <button class="btn-send" onclick="sendToStreamlit()">✨ Enviar Recorte a OpenAI</button>
   </div>
-  <div id="status">Presiona "🎥 Iniciar Cámara" y autoriza el acceso en tu navegador.</div>
+  <div id="status">Presiona "🎥 Iniciar Cámara" para comenzar.</div>
 
   <script>
-    // --- Streamlit Component Handshake ---
     function sendStreamlitMsg(type, data = {}) {
-      window.parent.postMessage({
-        isStreamlitMessage: true,
-        type: type,
-        ...data
-      }, "*");
+      window.parent.postMessage({ isStreamlitMessage: true, type, ...data }, "*");
     }
 
     function notifyReady() {
       sendStreamlitMsg("streamlit:componentReady", { apiVersion: 1 });
-      sendStreamlitMsg("streamlit:setFrameHeight", { height: 530 });
+      sendStreamlitMsg("streamlit:setFrameHeight", { height: 500 });
     }
 
-    window.addEventListener("message", (event) => {
-      if (event.data.type === "streamlit:render") {
-        sendStreamlitMsg("streamlit:setFrameHeight", { height: 530 });
-      }
+    window.addEventListener("message", (e) => {
+      if (e.data.type === "streamlit:render") sendStreamlitMsg("streamlit:setFrameHeight", { height: 500 });
     });
-
     notifyReady();
     window.addEventListener("load", notifyReady);
 
-    // --- MediaPipe and Drawing Logic ---
     const video = document.getElementById('webcam');
     const camCanvas = document.getElementById('camCanvas');
     const camCtx = camCanvas.getContext('2d');
@@ -116,36 +106,82 @@
     const startBtn = document.getElementById('startBtn');
 
     let prevPoint = null;
-    let cameraInstance = null;
 
     function clearCanvas() {
       pCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
-      statusDiv.innerText = "Lienzo limpiado. Junta los dedos para comenzar de nuevo.";
+      statusDiv.innerText = "Lienzo limpio.";
+    }
+
+    // Calculates the tight bounding box of pixels to make a transparent cutout
+    function getBoundingBox(ctx, w, h) {
+      const data = ctx.getImageData(0, 0, w, h).data;
+      let minX = w, minY = h, maxX = 0, maxY = 0;
+      let hasPixels = false;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const alpha = data[(y * w + x) * 4 + 3];
+          if (alpha > 30) {
+            hasPixels = true;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      if (!hasPixels) return null;
+      const pad = 12;
+      return {
+        x: Math.max(0, minX - pad),
+        y: Math.max(0, minY - pad),
+        w: Math.min(w, (maxX - minX) + pad * 2),
+        h: Math.min(h, (maxY - minY) + pad * 2)
+      };
     }
 
     function sendToStreamlit() {
-      const expCanvas = document.createElement('canvas');
-      expCanvas.width = 600;
-      expCanvas.height = 440;
-      const expCtx = expCanvas.getContext('2d');
-      expCtx.fillStyle = '#FFFFFF';
-      expCtx.fillRect(0, 0, 600, 440);
-      expCtx.drawImage(paintCanvas, 0, 0);
+      const box = getBoundingBox(pCtx, paintCanvas.width, paintCanvas.height);
+      if (!box) {
+        statusDiv.innerText = "⚠️ Dibuja algo primero pellizcando con los dedos.";
+        statusDiv.style.color = "#f85149";
+        return;
+      }
 
-      const base64Png = expCanvas.toDataURL('image/png');
-      sendStreamlitMsg("streamlit:setComponentValue", { value: base64Png });
-      statusDiv.innerText = "✅ ¡Dibujo enviado a Streamlit!";
+      // 1. Transparent Cutout Canvas (for the dancing animation)
+      const cutoutCanvas = document.createElement('canvas');
+      cutoutCanvas.width = box.w;
+      cutoutCanvas.height = box.h;
+      const cCtx = cutoutCanvas.getContext('2d');
+      cCtx.drawImage(paintCanvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+      const cutoutBase64 = cutoutCanvas.toDataURL('image/png');
+
+      // 2. High-contrast White Canvas (for OpenAI Vision recognition)
+      const visionCanvas = document.createElement('canvas');
+      visionCanvas.width = box.w;
+      visionCanvas.height = box.h;
+      const vCtx = visionCanvas.getContext('2d');
+      vCtx.fillStyle = '#FFFFFF';
+      vCtx.fillRect(0, 0, box.w, box.h);
+      vCtx.drawImage(cutoutCanvas, 0, 0);
+      const visionBase64 = visionCanvas.toDataURL('image/png');
+
+      const payload = JSON.stringify({
+        cutout: cutoutBase64,
+        vision: visionBase64
+      });
+
+      sendStreamlitMsg("streamlit:setComponentValue", { value: payload });
+      statusDiv.innerText = "✅ ¡Recorte transparente enviado!";
       statusDiv.style.color = "#3fb950";
     }
 
     function onResults(results) {
-      // 1. Draw video feed
       camCtx.save();
       camCtx.clearRect(0, 0, camCanvas.width, camCanvas.height);
       camCtx.drawImage(results.image, 0, 0, camCanvas.width, camCanvas.height);
       camCtx.restore();
 
-      // 2. Clear pointer overlay
       curCtx.clearRect(0, 0, curCanvas.width, curCanvas.height);
 
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
@@ -157,9 +193,8 @@
         const y = ((thumb.y + index.y) / 2) * paintCanvas.height;
 
         const dist = Math.hypot(thumb.x - index.x, thumb.y - index.y);
-        const isPinching = dist < 0.075;
+        const isPinching = dist < 0.07;
 
-        // Draw cursor pointer
         curCtx.beginPath();
         curCtx.arc(x, y, isPinching ? 8 : 6, 0, 2 * Math.PI);
         curCtx.fillStyle = isPinching ? "#00f2fe" : "#f1c40f";
@@ -174,6 +209,8 @@
 
           if (prevPoint) {
             pCtx.strokeStyle = '#00f2fe';
+            pCtx.shadowColor = '#00f2fe';
+            pCtx.shadowBlur = 10;
             pCtx.lineWidth = 6;
             pCtx.lineCap = 'round';
             pCtx.lineJoin = 'round';
@@ -184,7 +221,7 @@
           }
           prevPoint = { x, y };
         } else {
-          statusDiv.innerText = "✋ Mano detectada (Junta índice y pulgar para dibujar)";
+          statusDiv.innerText = "✋ Mano detectada (Junta índice y pulgar para pintar)";
           statusDiv.style.color = "#f1c40f";
           prevPoint = null;
         }
@@ -197,13 +234,12 @@
 
     async function startCamera() {
       try {
-        statusDiv.innerText = "Iniciando cámara y MediaPipe...";
         startBtn.disabled = true;
+        statusDiv.innerText = "Cargando MediaPipe...";
 
         const hands = new Hands({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
-
         hands.setOptions({
           maxNumHands: 1,
           modelComplexity: 1,
@@ -212,18 +248,17 @@
         });
         hands.onResults(onResults);
 
-        cameraInstance = new Camera(video, {
+        const camera = new Camera(video, {
           onFrame: async () => { await hands.send({ image: video }); },
-          width: 600,
-          height: 440
+          width: 580,
+          height: 420
         });
-
-        await cameraInstance.start();
+        await camera.start();
         startBtn.style.display = "none";
-        statusDiv.innerText = "✅ Cámara activa. Junta índice y pulgar para dibujar.";
+        statusDiv.innerText = "✅ Cámara activa. Dibuja en el aire pellizcando tus dedos.";
         statusDiv.style.color = "#3fb950";
-      } catch (err) {
-        statusDiv.innerText = "❌ Error al acceder a la cámara: " + err.message;
+      } catch (e) {
+        statusDiv.innerText = "❌ Error: " + e.message;
         statusDiv.style.color = "#da3633";
         startBtn.disabled = false;
       }
