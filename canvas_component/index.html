@@ -57,26 +57,11 @@
       border: 1px solid transparent;
       cursor: pointer;
       transition: all 0.2s;
-      letter-spacing: 0.5px;
     }
-    .btn-start { 
-      background: #0284c7; 
-      color: #fff; 
-      border-color: #38bdf8; 
-    }
-    .btn-clear { 
-      background: #1e293b; 
-      color: #94a3b8; 
-      border-color: #334155; 
-    }
-    .btn-send { 
-      background: linear-gradient(135deg, #a855f7, #ec4899); 
-      color: white; 
-    }
-    button:hover { 
-      filter: brightness(1.15); 
-      transform: translateY(-1px); 
-    }
+    .btn-start { background: #0284c7; color: #fff; border-color: #38bdf8; }
+    .btn-clear { background: #1e293b; color: #94a3b8; border-color: #334155; }
+    .btn-send { background: linear-gradient(135deg, #a855f7, #ec4899); color: white; }
+    button:hover { filter: brightness(1.15); transform: translateY(-1px); }
     #status {
       font-family: 'JetBrains Mono', monospace;
       margin-top: 8px;
@@ -141,9 +126,7 @@
         minTrackingConfidence: 0.6
       });
       handsDetector.onResults(onResults);
-    } catch (e) {
-      console.warn("MediaPipe load error:", e);
-    }
+    } catch (e) {}
 
     async function startCamera() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -234,10 +217,15 @@
       vCtx.drawImage(cCanvas, 0, 0);
       const visionBase64 = vCanvas.toDataURL('image/png');
 
+      // Unique timestamp guarantees Streamlit processes every single click
       sendStreamlitMsg("streamlit:setComponentValue", {
-        value: JSON.stringify({ cutout: cutoutBase64, vision: visionBase64 })
+        value: JSON.stringify({
+          cutout: cutoutBase64,
+          vision: visionBase64,
+          req_id: Date.now()
+        })
       });
-      statusDiv.innerText = "VECTOR TRANSMITIDO AL NÚCLEO CINEMÁTICO";
+      statusDiv.innerText = "⚡ TRANSMITIENDO VECTOR A OPENAI Y ROBOT...";
     }
 
     function onResults(results) {
@@ -257,7 +245,6 @@
         const y = ((thumb.y + index.y) / 2) * paintCanvas.height;
         const isPinching = Math.hypot(thumb.x - index.x, thumb.y - index.y) < 0.07;
 
-        // Reticle cursor
         curCtx.beginPath();
         curCtx.arc(x, y, isPinching ? 6 : 8, 0, 2 * Math.PI);
         curCtx.fillStyle = isPinching ? "#38bdf8" : "rgba(255,255,255,0.4)";
