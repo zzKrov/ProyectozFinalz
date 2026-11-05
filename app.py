@@ -16,13 +16,12 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Luminous Theme & Guaranteed-Visible Pure CSS Drawer
+# Luminous Theme & Pure CSS Drawer (Flush-Left HTML)
 # ---------------------------------------------------------
 magical_theme = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&family=JetBrains+Mono:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&display=swap');
 
-/* Prevent Streamlit header from blocking fixed UI elements */
 header[data-testid="stHeader"] {
     background: transparent !important;
     z-index: 10 !important;
@@ -38,7 +37,6 @@ html, body, [data-testid="stAppViewContainer"] {
     overflow-x: hidden;
 }
 
-/* Twinkling Stardust Background Overlay */
 .stars-overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -81,12 +79,10 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-top: 2px;
 }
 
-/* Target containers for companion highlighting */
 .target-canvas, .target-stage, .target-story {
     transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-/* Companion Interactive Highlight States */
 .highlight-active-cyan {
     outline: 3px solid #38bdf8 !important;
     box-shadow: 0 0 40px rgba(56, 189, 248, 0.85), 0 0 70px rgba(192, 132, 252, 0.5) !important;
@@ -112,7 +108,6 @@ html, body, [data-testid="stAppViewContainer"] {
     z-index: 50 !important;
 }
 
-/* Story Card */
 .story-card {
     background: rgba(26, 20, 56, 0.65);
     border: 1px solid rgba(192, 132, 252, 0.3);
@@ -158,7 +153,6 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-top: 6px;
 }
 
-/* Stage Box */
 .stage-box {
     position: relative;
     border-radius: 16px;
@@ -200,13 +194,12 @@ div.stButton > button {
 }
 
 /* ------------------------------------------------------------- */
-/* PURE CSS DRAWER (IMMUNE TO JAVASCRIPT BLOCKING OR CSP)       */
+/* PURE CSS DRAWER                                               */
 /* ------------------------------------------------------------- */
 .drawer-checkbox {
     display: none !important;
 }
 
-/* Floating Corner Pill */
 .drawer-trigger-btn {
     position: fixed;
     top: 14px;
@@ -235,7 +228,6 @@ div.stButton > button {
     box-shadow: 0 0 35px rgba(56, 189, 248, 0.8) !important;
 }
 
-/* Inline Header Button Backup */
 .drawer-inline-btn {
     display: inline-flex;
     align-items: center;
@@ -258,15 +250,14 @@ div.stButton > button {
     background: rgba(56, 189, 248, 0.15);
 }
 
-/* Sliding Panel */
 .drawer-panel {
     position: fixed;
     top: 0;
     right: 0;
-    width: 480px;
+    width: 490px;
     max-width: 90vw;
     height: 100vh;
-    background: rgba(15, 11, 33, 0.96) !important;
+    background: rgba(15, 11, 33, 0.97) !important;
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
     border-left: 1px solid rgba(192, 132, 252, 0.4) !important;
@@ -279,7 +270,6 @@ div.stButton > button {
     box-sizing: border-box;
 }
 
-/* Backdrop */
 .drawer-backdrop {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -292,7 +282,6 @@ div.stButton > button {
     transition: opacity 0.35s ease;
 }
 
-/* PURE CSS TOGGLE ON CHECKED */
 .drawer-checkbox:checked ~ .drawer-panel {
     transform: translateX(0) !important;
 }
@@ -357,15 +346,8 @@ div.stButton > button {
     color: #38bdf8;
     margin-top: 18px;
     margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.drawer-section-title:first-child {
-    margin-top: 0;
 }
 
-/* Interactive Companion Badges */
 .companion-link {
     display: inline-block;
     padding: 2px 9px;
@@ -401,7 +383,6 @@ div.stButton > button {
     filter: brightness(1.2);
 }
 
-/* Image Slots / Placeholders */
 .image-slot {
     width: 100%;
     margin: 12px 0 16px 0;
@@ -410,7 +391,6 @@ div.stButton > button {
     background: rgba(15, 12, 33, 0.5);
     padding: 14px;
     text-align: center;
-    transition: border-color 0.2s;
     box-sizing: border-box;
 }
 .image-slot:hover {
@@ -422,119 +402,49 @@ div.stButton > button {
     margin-top: 6px;
 }
 </style>
-
 <div class="stars-overlay"></div>
-
-<!-- 1. Pure CSS Drawer Checkbox -->
 <input type="checkbox" id="drawer-toggle" class="drawer-checkbox">
-
-<!-- 2. Guaranteed-Visible Top-Right Floating Pill -->
-<label for="drawer-toggle" class="drawer-trigger-btn">
-    <span>🟢</span>
-    <span>📋 Informe del Proyecto</span>
-</label>
-
-<!-- 3. Clickable Backdrop to close -->
+<label for="drawer-toggle" class="drawer-trigger-btn"><span>🟢</span><span>📋 Informe del Proyecto</span></label>
 <label for="drawer-toggle" class="drawer-backdrop"></label>
-
-<!-- 4. Sliding Panel with Exact Concise Report -->
 <div class="drawer-panel">
-    <div class="drawer-header">
-        <div class="drawer-title">Informe & Guía Interactiva</div>
-        <label for="drawer-toggle" class="drawer-close-label">✕</label>
-    </div>
-    <div class="drawer-content">
-        <div style="font-size: 0.78rem; color: #a855f7; font-weight: 600; margin-bottom: 12px;">
-            ESTUDIANTE: Juan David Segura &bull; INTERFACES MULTIMODALES
-        </div>
-
-        <div class="drawer-section-title">✨ ¿Qué es este proyecto?</div>
-        <p>
-            Es un <b>teatro interactivo que mezcla lo digital con lo físico</b>. Dibujas figuras en el aire con tus dedos frente a la cámara web, y el sistema convierte ese dibujo en un cuento narrado por voz, le compone una melodía musical original y hace que un escenario físico en miniatura (simulado en Wokwi) actúe la escena abriendo telones y moviendo piezas en tiempo real.
-        </p>
-
-        <!-- Image Slot 1: Flujo General -->
-        <div class="image-slot">
-            <div style="font-size: 1.5rem;">🔮 ──▶ 🎭</div>
-            <div style="font-weight: 600; font-size: 0.85rem; color: #cbd5e1;">Espacio para Imagen 1: Flujo Multimodal</div>
-            <div class="image-slot-caption">(Reemplaza con captura del sistema interactivo en vivo)</div>
-        </div>
-
-        <div class="drawer-section-title">⚙️ ¿Cómo funciona?</div>
-        <ol style="padding-left: 18px; margin-top: 4px;">
-            <li style="margin-bottom: 10px;">
-                <b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.
-                <br>
-                <span class="companion-link cyan" data-target="canvas" data-color="cyan">
-                    🔍 Resaltar Lienzo de Dibujo
-                </span>
-            </li>
-            <li style="margin-bottom: 10px;">
-                <b>La IA interpreta y crea:</b>
-                <ul style="padding-left: 16px; margin-top: 4px;">
-                    <li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li>
-                    <li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple" data-target="story" data-color="purple">tts-1-hd con voz modulada</span>).</li>
-                    <li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li>
-                </ul>
-            </li>
-            <li style="margin-bottom: 10px;">
-                <b>El escenario cobra vida:</b>
-                <ul style="padding-left: 16px; margin-top: 4px;">
-                    <li>En tu pantalla, tu dibujo aparece recortado flotando y bailando sobre el escenario.</li>
-                    <li>Por internet (vía MQTT), la placa ESP32 en Wokwi recibe la orden: abre los telones, enciende las luces del color del cuento, eleva al personaje y toca la melodía con su zumbador como una cajita de música.</li>
-                </ul>
-            </li>
-        </ol>
-
-        <!-- Image Slot 2: Circuito y Mecanismo -->
-        <div class="image-slot">
-            <div style="font-size: 1.5rem;">🎪 🦾 🎼</div>
-            <div style="font-weight: 600; font-size: 0.85rem; color: #cbd5e1;">Espacio para Imagen 2: Mecanismo Wokwi</div>
-            <div class="image-slot-caption">(Reemplaza con captura del circuito y los servomotores)</div>
-        </div>
-
-        <div class="drawer-section-title">🦾 ¿Qué hace cada servomotor exactamente?</div>
-        <ul style="padding-left: 18px; margin-top: 4px;">
-            <li style="margin-bottom: 10px;">
-                <b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.
-                <br>
-                <span class="companion-link red" data-target="stage" data-color="red">
-                    🎭 Resaltar Telones en Escenario
-                </span>
-            </li>
-            <li style="margin-bottom: 10px;">
-                <b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.
-                <br>
-                <span class="companion-link gold" data-target="stage" data-color="gold">
-                    🚀 Resaltar Elevador Mecánico
-                </span>
-            </li>
-            <li style="margin-bottom: 10px;">
-                <b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).
-                <br>
-                <span class="companion-link cyan" data-target="stage" data-color="cyan">
-                    🌪️ Resaltar Máquina de Viento
-                </span>
-            </li>
-        </ul>
-
-        <div class="drawer-section-title">💡 El resto del hardware:</div>
-        <ul style="padding-left: 18px; margin-top: 4px;">
-            <li style="margin-bottom: 6px;">
-                <b>Luces LED (Anillo y Tira):</b> Iluminan el arco del cielo y el suelo con el color y brillo que elija la IA para la escena.
-            </li>
-            <li style="margin-bottom: 6px;">
-                <b>Pantalla OLED:</b> Muestra el título de la obra y el nombre de la partitura que está sonando.
-            </li>
-            <li style="margin-bottom: 6px;">
-                <b>Zumbador:</b> Toca la partitura que compuso la IA nota por nota a un volumen suave.
-            </li>
-        </ul>
-
-        <div style="text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid rgba(192,132,252,0.2); font-size: 0.8rem; color: #94a3b8;">
-            Tip: Pasa el mouse sobre los botones de arriba para iluminar los módulos del sitio en tiempo real.
-        </div>
-    </div>
+<div class="drawer-header">
+<div class="drawer-title">Informe & Guía Interactiva</div>
+<label for="drawer-toggle" class="drawer-close-label">✕</label>
+</div>
+<div class="drawer-content">
+<div style="font-size:0.78rem;color:#a855f7;font-weight:600;margin-bottom:12px;">ESTUDIANTE: Juan David Segura &bull; INTERFACES MULTIMODALES</div>
+<div class="drawer-section-title">✨ ¿Qué es este proyecto?</div>
+<p>Es un <b>teatro interactivo que mezcla lo digital con lo físico</b>. Dibujas figuras en el aire con tus dedos frente a la cámara web, y el sistema convierte ese dibujo en un cuento narrado por voz, le compone una melodía musical original y hace que un escenario físico en miniatura (simulado en Wokwi) actúe la escena abriendo telones y moviendo piezas en tiempo real.</p>
+<div class="image-slot">
+<div style="font-size:1.5rem;">🔮 ──▶ 🎭</div>
+<div style="font-weight:600;font-size:0.85rem;color:#cbd5e1;">Espacio para Imagen 1: Flujo Multimodal</div>
+<div class="image-slot-caption">(Reemplaza con captura del sistema interactivo en vivo)</div>
+</div>
+<div class="drawer-section-title">⚙️ ¿Cómo funciona?</div>
+<ol style="padding-left:18px;margin-top:4px;">
+<li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan" data-target="canvas" data-color="cyan">🔍 Resaltar Lienzo de Dibujo</span></li>
+<li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple" data-target="story" data-color="purple">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
+<li style="margin-bottom:10px;"><b>El escenario cobra vida:</b><ul style="padding-left:16px;margin-top:4px;"><li>En tu pantalla, tu dibujo aparece recortado flotando y bailando sobre el escenario.</li><li>Por internet (vía MQTT), la placa ESP32 en Wokwi recibe la orden: abre los telones, enciende las luces del color del cuento, eleva al personaje y toca la melodía con su zumbador como una cajita de música.</li></ul></li>
+</ol>
+<div class="image-slot">
+<div style="font-size:1.5rem;">🎪 🦾 🎼</div>
+<div style="font-weight:600;font-size:0.85rem;color:#cbd5e1;">Espacio para Imagen 2: Mecanismo Wokwi</div>
+<div class="image-slot-caption">(Reemplaza con captura del circuito y los servomotores)</div>
+</div>
+<div class="drawer-section-title">🦾 ¿Qué hace cada servomotor exactamente?</div>
+<ul style="padding-left:18px;margin-top:4px;">
+<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red" data-target="stage" data-color="red">🎭 Resaltar Telones en Escenario</span></li>
+<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold" data-target="stage" data-color="gold">🚀 Resaltar Elevador Mecánico</span></li>
+<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan" data-target="stage" data-color="cyan">🌪️ Resaltar Máquina de Viento</span></li>
+</ul>
+<div class="drawer-section-title">💡 El resto del hardware:</div>
+<ul style="padding-left:18px;margin-top:4px;">
+<li style="margin-bottom:6px;"><b>Luces LED (Anillo y Tira):</b> Iluminan el arco del cielo y el suelo con el color y brillo que elija la IA para la escena.</li>
+<li style="margin-bottom:6px;"><b>Pantalla OLED:</b> Muestra el título de la obra y el nombre de la partitura que está sonando.</li>
+<li style="margin-bottom:6px;"><b>Zumbador:</b> Toca la partitura que compuso la IA nota por nota a un volumen suave.</li>
+</ul>
+<div style="text-align:center;margin-top:25px;padding-top:15px;border-top:1px solid rgba(192,132,252,0.2);font-size:0.8rem;color:#94a3b8;">Tip: Pasa el mouse sobre los botones de arriba para iluminar los módulos del sitio en tiempo real.</div>
+</div>
 </div>
 """
 st.markdown(magical_theme, unsafe_allow_html=True)
@@ -926,7 +836,7 @@ function initCompanion() {
                 const color = link.getAttribute('data-color') || 'cyan';
                 const el = pDoc.querySelector('.target-' + target);
                 if (el) {
-                    el.classList.remove('highlight-active-' + color);
+                    el.classList.remove('highlight-active-cyan', 'highlight-active-red', 'highlight-active-gold', 'highlight-active-purple');
                 }
             });
         });
