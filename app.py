@@ -165,11 +165,13 @@ div:has(> iframe[src*="wokwi.com"]),
     transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }}
 
-/* Theatrical Illuminated Frame */
+/* Theatrical DOM Frame Highlight */
 .companion-frame-active {{
-    box-shadow: 0 0 0 2px var(--highlight-color, #38bdf8), 0 0 35px var(--highlight-color, #38bdf8), 0 0 65px rgba(192, 132, 252, 0.35) !important;
+    outline: 2.5px solid var(--highlight-color, #38bdf8) !important;
+    outline-offset: 6px !important;
+    box-shadow: 0 0 35px var(--highlight-color, #38bdf8), inset 0 0 20px rgba(56, 189, 248, 0.15) !important;
     border-radius: 14px !important;
-    transition: box-shadow 0.25s ease, transform 0.25s ease !important;
+    transition: outline 0.25s ease, box-shadow 0.25s ease !important;
 }}
 
 .story-card {{
@@ -580,7 +582,7 @@ def render_ambiente_1():
 
     with col_draw:
         current_chapter_num = len(st.session_state.story_chapters) + 1
-        st.markdown('<div id="companion-anchor-canvas"></div>', unsafe_allow_html=True)
+        st.markdown('<div id="target-anchor-canvas"></div>', unsafe_allow_html=True)
         st.markdown(f"##### Lienzo de Captura Gestual &bull; *Capítulo {current_chapter_num}*")
         st.caption("Junta el índice y el pulgar (pinza) para dibujar en el aire.")
         canvas_output = air_canvas(default=None, key="air_canvas_ui")
@@ -732,7 +734,7 @@ def render_ambiente_1():
             st.error(f"Error al generar historia: {err}")
 
     with col_stage:
-        st.markdown('<div id="companion-anchor-stage"></div>', unsafe_allow_html=True)
+        st.markdown('<div id="target-anchor-stage"></div>', unsafe_allow_html=True)
         col_st_title, col_btns = st.columns([0.55, 0.45])
         with col_st_title:
             st.markdown("##### Escenario Mecatrónico en Vivo")
@@ -915,154 +917,153 @@ if show_amb2:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# High-Fidelity Theatrical Auto-Scroll, Frame & Stardust
+# Reliable Injected Runtime (Direct Parent Execution)
 # ---------------------------------------------------------
 companion_client_script = """
 (function() {
-    var doc = window.parent.document;
-    var win = window.parent;
-
     function findTarget(key) {
         if (key === 'canvas') {
-            var anchor = doc.getElementById('companion-anchor-canvas');
+            var anchor = document.getElementById('target-anchor-canvas');
             if (anchor) return anchor.closest('[data-testid="stColumn"]') || anchor.parentElement;
-            return doc.querySelector('[data-testid="stColumn"]:first-child');
+            return document.querySelector('[data-testid="stColumn"]:first-child');
         }
         if (key === 'stage') {
-            var anchor = doc.getElementById('companion-anchor-stage');
+            var anchor = document.getElementById('target-anchor-stage');
             if (anchor) return anchor.closest('[data-testid="stColumn"]') || anchor.parentElement;
-            var ifr = doc.querySelector('iframe[src*="wokwi.com"]');
+            var ifr = document.querySelector('iframe[src*="wokwi.com"]');
             return ifr ? (ifr.closest('[data-testid="element-container"]') || ifr) : null;
         }
         if (key === 'story') {
-            return doc.getElementById('target-story-box') || doc.querySelector('.story-card');
+            return document.getElementById('target-story-box') || document.querySelector('.story-card');
         }
         if (key === 'telemetry') {
-            return doc.getElementById('target-telemetry-box') || doc.getElementById('ambience-2-wrapper');
+            return document.getElementById('target-telemetry-box') || document.getElementById('ambience-2-wrapper');
         }
         return null;
     }
 
-    // Dynamic scroll container discovery
-    function getScrollContainer() {
-        var appView = doc.querySelector('[data-testid="stAppViewContainer"]');
-        if (appView && appView.scrollHeight > appView.clientHeight) return appView;
-        var mainSec = doc.querySelector('section.main');
-        if (mainSec && mainSec.scrollHeight > mainSec.clientHeight) return mainSec;
-        return win;
-    }
-
-    var scrollAnimId = null;
-    function smoothScrollCenter(element, duration) {
+    var activeScrollAnim = null;
+    function smoothScrollCenter(element) {
         if (!element) return;
-        if (scrollAnimId) {
-            cancelAnimationFrame(scrollAnimId);
-            scrollAnimId = null;
+        if (activeScrollAnim) {
+            cancelAnimationFrame(activeScrollAnim);
+            activeScrollAnim = null;
         }
-        duration = duration || 680;
 
-        var container = getScrollContainer();
-        var isWindow = (container === win);
+        // Determine real scroll container
+        var container = null;
+        var p = element.parentElement;
+        while (p && p !== document.body) {
+            var cs = window.getComputedStyle(p);
+            if ((cs.overflowY === 'auto' || cs.overflowY === 'scroll') && p.scrollHeight > p.clientHeight) {
+                container = p;
+                break;
+            }
+            p = p.parentElement;
+        }
 
-        var startScroll = isWindow ? (win.scrollY || win.pageYOffset) : container.scrollTop;
+        if (!container) {
+            var stMain = document.querySelector('section.main') || document.querySelector('.main');
+            var stApp = document.querySelector('[data-testid="stAppViewContainer"]');
+            if (stMain && stMain.scrollHeight > stMain.clientHeight) {
+                container = stMain;
+            } else if (stApp && stApp.scrollHeight > stApp.clientHeight) {
+                container = stApp;
+            } else {
+                container = window;
+            }
+        }
+
+        var isWin = (container === window);
+        var viewH = window.innerHeight;
         var rect = element.getBoundingClientRect();
-        var viewportHeight = win.innerHeight;
-        
-        // Exact delta required to center the element
-        var delta = (rect.top + rect.height / 2) - (viewportHeight / 2);
+        var currentCenter = rect.top + rect.height / 2;
+        var desiredCenter = viewH / 2;
+        var delta = currentCenter - desiredCenter;
 
-        if (Math.abs(delta) < 18) return;
+        if (Math.abs(delta) < 14) return;
 
-        var maxScroll = isWindow ? 
-            (doc.documentElement.scrollHeight - viewportHeight) : 
+        var startY = isWin ? (window.pageYOffset || document.documentElement.scrollTop) : container.scrollTop;
+        var maxScroll = isWin ? 
+            (document.documentElement.scrollHeight - viewH) : 
             (container.scrollHeight - container.clientHeight);
 
-        var targetScroll = Math.max(0, Math.min(startScroll + delta, maxScroll));
-        var distance = targetScroll - startScroll;
-        if (Math.abs(distance) < 4) return;
+        var targetY = Math.max(0, Math.min(startY + delta, maxScroll));
+        var dist = targetY - startY;
 
-        var startTime = performance.now();
+        if (Math.abs(dist) < 4) return;
 
-        function easeOutCubic(t) {
-            return (--t) * t * t + 1;
-        }
+        var duration = 580; // ms
+        var startT = performance.now();
 
         function step(now) {
-            var elapsed = now - startTime;
+            var elapsed = now - startT;
             var progress = Math.min(elapsed / duration, 1);
-            var ease = easeOutCubic(progress);
-            var currentPos = startScroll + distance * ease;
+            var ease = 1 - Math.pow(1 - progress, 3);
+            var currentPos = startY + dist * ease;
 
-            if (isWindow) {
-                win.scrollTo(0, currentPos);
+            if (isWin) {
+                window.scrollTo(0, currentPos);
             } else {
                 container.scrollTop = currentPos;
             }
 
             if (progress < 1) {
-                scrollAnimId = requestAnimationFrame(step);
+                activeScrollAnim = requestAnimationFrame(step);
             } else {
-                scrollAnimId = null;
+                activeScrollAnim = null;
             }
         }
-        scrollAnimId = requestAnimationFrame(step);
+        activeScrollAnim = requestAnimationFrame(step);
     }
 
     function initCanvas() {
-        var c = doc.getElementById('companion-trail-canvas');
+        var c = document.getElementById('companion-trail-canvas');
         if (!c) {
-            c = doc.createElement('canvas');
+            c = document.createElement('canvas');
             c.id = 'companion-trail-canvas';
             c.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999999;';
-            doc.body.appendChild(c);
+            document.body.appendChild(c);
         }
         return c;
     }
 
     var canvas = initCanvas();
     var ctx = canvas.getContext('2d');
-    var dpr = win.devicePixelRatio || 1;
 
     function resize() {
-        dpr = win.devicePixelRatio || 1;
-        canvas.width = win.innerWidth * dpr;
-        canvas.height = win.innerHeight * dpr;
-        canvas.style.width = win.innerWidth + 'px';
-        canvas.style.height = win.innerHeight + 'px';
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
     }
     resize();
-    win.addEventListener('resize', resize);
+    window.addEventListener('resize', resize);
 
     var particles = [];
-    var impacts = [];
     var isHover = false;
     var currentBadge = null;
     var currentTarget = null;
     var currentHex = '#38bdf8';
-    var animFrame = null;
+    var animLoopId = null;
 
     function spawnStardust() {
         if (!isHover || !currentBadge || !currentTarget) return;
         
-        for (var i = 0; i < 2; i++) {
+        for (var i = 0; i < 3; i++) {
             particles.push({
                 t: 0,
-                speed: 0.020 + Math.random() * 0.016,
-                size: 1.6 + Math.random() * 2.8,
-                arcOffset: (Math.random() - 0.5) * 80,
-                targetYRatio: 0.15 + Math.random() * 0.7,
-                wobbleAmp: 4 + Math.random() * 10,
-                wobbleFreq: 2 + Math.random() * 3,
+                speed: 0.024 + Math.random() * 0.018,
+                size: 1.8 + Math.random() * 2.6,
+                arcOffset: (Math.random() - 0.5) * 70,
+                targetYRatio: 0.2 + Math.random() * 0.6,
+                wobbleAmp: 4 + Math.random() * 8,
                 phase: Math.random() * Math.PI * 2,
-                color: Math.random() > 0.3 ? currentHex : '#ffffff',
-                isStar: Math.random() > 0.55
+                color: Math.random() > 0.35 ? currentHex : '#ffffff'
             });
         }
     }
 
     function drawTheatricalFrame(rect, hex) {
-        var p = 7;
+        var p = 8;
         var bx = rect.left - p;
         var by = rect.top - p;
         var bw = rect.width + p * 2;
@@ -1071,196 +1072,121 @@ companion_client_script = """
         if (bw <= 0 || bh <= 0) return;
 
         ctx.save();
-        
-        // 1. Luminous perimeter beam
-        var pulse = 0.45 + 0.25 * Math.sin(Date.now() / 240);
         ctx.strokeStyle = hex;
-        ctx.globalAlpha = pulse;
-        ctx.lineWidth = 1.8;
         ctx.shadowColor = hex;
-        ctx.shadowBlur = 18;
-        if (ctx.roundRect) {
-            ctx.beginPath();
-            ctx.roundRect(bx, by, bw, bh, 12);
-            ctx.stroke();
-        } else {
-            ctx.strokeRect(bx, by, bw, bh);
-        }
 
-        // 2. High-Tech Corner Brackets (L-shaped)
-        var cornerLen = Math.min(22, bw / 4, bh / 4);
-        ctx.globalAlpha = 0.95;
+        // 1. L-Shaped Corner Brackets
+        var cLen = Math.min(24, bw / 4, bh / 4);
         ctx.lineWidth = 3.5;
-        ctx.shadowBlur = 24;
+        ctx.shadowBlur = 20;
+        ctx.globalAlpha = 0.95;
 
         // Top-Left
         ctx.beginPath();
-        ctx.moveTo(bx, by + cornerLen);
+        ctx.moveTo(bx, by + cLen);
         ctx.lineTo(bx, by);
-        ctx.lineTo(bx + cornerLen, by);
+        ctx.lineTo(bx + cLen, by);
         ctx.stroke();
 
         // Top-Right
         ctx.beginPath();
-        ctx.moveTo(bx + bw - cornerLen, by);
+        ctx.moveTo(bx + bw - cLen, by);
         ctx.lineTo(bx + bw, by);
-        ctx.lineTo(bx + bw, by + cornerLen);
+        ctx.lineTo(bx + bw, by + cLen);
         ctx.stroke();
 
         // Bottom-Right
         ctx.beginPath();
-        ctx.moveTo(bx + bw, by + bh - cornerLen);
+        ctx.moveTo(bx + bw, by + bh - cLen);
         ctx.lineTo(bx + bw, by + bh);
-        ctx.lineTo(bx + bw - cornerLen, by + bh);
+        ctx.lineTo(bx + bw - cLen, by + bh);
         ctx.stroke();
 
         // Bottom-Left
         ctx.beginPath();
-        ctx.moveTo(bx + cornerLen, by + bh);
+        ctx.moveTo(bx + cLen, by + bh);
         ctx.lineTo(bx, by + bh);
-        ctx.lineTo(bx, by + bh - cornerLen);
+        ctx.lineTo(bx, by + bh - cLen);
         ctx.stroke();
 
-        ctx.restore();
-    }
+        // 2. Pulsing Perimeter Aura
+        var pulse = 0.35 + 0.25 * Math.sin(Date.now() / 220);
+        ctx.lineWidth = 1.5;
+        ctx.shadowBlur = 14;
+        ctx.globalAlpha = pulse;
+        ctx.strokeRect(bx, by, bw, bh);
 
-    function drawTwinkleStar(cx, cy, radius, color, alpha) {
-        ctx.save();
-        ctx.fillStyle = color;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 10;
-        ctx.globalAlpha = alpha;
-        ctx.beginPath();
-        for (var i = 0; i < 4; i++) {
-            var a = (i * Math.PI) / 2;
-            var x1 = cx + Math.cos(a) * radius;
-            var y1 = cy + Math.sin(a) * radius;
-            var aMid = a + Math.PI / 4;
-            var xMid = cx + Math.cos(aMid) * (radius * 0.32);
-            var yMid = cy + Math.sin(aMid) * (radius * 0.32);
-            if (i === 0) ctx.moveTo(x1, y1);
-            else ctx.lineTo(x1, y1);
-            ctx.lineTo(xMid, yMid);
-        }
-        ctx.closePath();
-        ctx.fill();
         ctx.restore();
     }
 
     function loop() {
-        ctx.clearRect(0, 0, win.innerWidth, win.innerHeight);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Track live coordinates during scroll
-        if (currentTarget) {
-            var targetRect = currentTarget.getBoundingClientRect();
-            if (isHover) {
-                drawTheatricalFrame(targetRect, currentHex);
-                spawnStardust();
-            }
+        if (currentTarget && isHover) {
+            var tr = currentTarget.getBoundingClientRect();
+            drawTheatricalFrame(tr, currentHex);
+            spawnStardust();
         }
 
-        var badgeRect = currentBadge ? currentBadge.getBoundingClientRect() : null;
+        if (currentBadge && currentTarget) {
+            var rA = currentBadge.getBoundingClientRect();
+            var rB = currentTarget.getBoundingClientRect();
 
-        // Render In-Flight Stardust Particles
-        for (var j = particles.length - 1; j >= 0; j--) {
-            var pt = particles[j];
-            pt.t += pt.speed;
+            for (var j = particles.length - 1; j >= 0; j--) {
+                var pt = particles[j];
+                pt.t += pt.speed;
 
-            if (pt.t >= 1) {
-                // Splash sparkle impact on target frame
-                if (currentTarget) {
-                    var tr = currentTarget.getBoundingClientRect();
-                    impacts.push({
-                        x: tr.right + 2,
-                        y: tr.top + tr.height * pt.targetYRatio,
-                        radius: 2 + Math.random() * 4,
-                        life: 1.0,
-                        decay: 0.045,
-                        color: pt.color
-                    });
+                if (pt.t >= 1) {
+                    particles.splice(j, 1);
+                    continue;
                 }
-                particles.splice(j, 1);
-                continue;
-            }
 
-            if (!badgeRect || !currentTarget) {
-                particles.splice(j, 1);
-                continue;
-            }
+                // Dynamic live coordinates
+                var x0 = rA.left - 4;
+                var y0 = rA.top + rA.height / 2;
+                var x1 = rB.right + 6;
+                var y1 = rB.top + rB.height * pt.targetYRatio;
 
-            var tRect = currentTarget.getBoundingClientRect();
+                var cx = (x0 + x1) / 2;
+                var cy = Math.min(y0, y1) - 60 + pt.arcOffset;
 
-            // Real-time tracking start and end points
-            var x0 = badgeRect.left - 4;
-            var y0 = badgeRect.top + badgeRect.height / 2;
-            var x1 = tRect.right + 6;
-            var y1 = tRect.top + tRect.height * pt.targetYRatio;
+                var invT = 1 - pt.t;
+                var curX = invT * invT * x0 + 2 * invT * pt.t * cx + pt.t * pt.t * x1;
+                var curY = invT * invT * y0 + 2 * invT * pt.t * cy + pt.t * pt.t * y1;
 
-            // Arched celestial curve
-            var cx = (x0 + x1) / 2;
-            var cy = Math.min(y0, y1) - 60 + pt.arcOffset;
+                curY += Math.sin(pt.t * Math.PI * 3 + pt.phase) * pt.wobbleAmp;
 
-            var invT = 1 - pt.t;
-            var curX = invT * invT * x0 + 2 * invT * pt.t * cx + pt.t * pt.t * x1;
-            var curY = invT * invT * y0 + 2 * invT * pt.t * cy + pt.t * pt.t * y1;
+                var alpha = pt.t < 0.2 ? (pt.t / 0.2) : (1 - pt.t);
 
-            // Harmonic orbital stardust wobble
-            curY += Math.sin(pt.t * Math.PI * pt.wobbleFreq + pt.phase) * pt.wobbleAmp;
-            curX += Math.cos(pt.t * Math.PI * 2 + pt.phase) * (pt.wobbleAmp * 0.35);
-
-            var alpha = pt.t < 0.2 ? (pt.t / 0.2) : (1 - pt.t);
-
-            if (pt.isStar) {
-                drawTwinkleStar(curX, curY, pt.size * 1.5, pt.color, alpha);
-            } else {
                 ctx.save();
-                ctx.beginPath();
-                ctx.arc(curX, curY, pt.size, 0, Math.PI * 2);
                 ctx.fillStyle = pt.color;
                 ctx.shadowColor = pt.color;
-                ctx.shadowBlur = 12;
-                ctx.globalAlpha = alpha;
+                ctx.shadowBlur = 10;
+                ctx.globalAlpha = Math.max(0, Math.min(alpha, 1));
+                ctx.beginPath();
+                ctx.arc(curX, curY, pt.size, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
             }
         }
 
-        // Render Impact Sparks on Frame
-        for (var k = impacts.length - 1; k >= 0; k--) {
-            var imp = impacts[k];
-            imp.life -= imp.decay;
-            if (imp.life <= 0) {
-                impacts.splice(k, 1);
-                continue;
-            }
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(imp.x, imp.y, imp.radius * (2 - imp.life), 0, Math.PI * 2);
-            ctx.strokeStyle = imp.color;
-            ctx.shadowColor = imp.color;
-            ctx.shadowBlur = 14;
-            ctx.globalAlpha = imp.life;
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            ctx.restore();
-        }
-
-        if (particles.length > 0 || impacts.length > 0 || isHover) {
-            animFrame = requestAnimationFrame(loop);
+        if (particles.length > 0 || isHover) {
+            animLoopId = requestAnimationFrame(loop);
         } else {
-            animFrame = null;
+            animLoopId = null;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
     }
 
     function startLoop() {
-        if (!animFrame) animFrame = requestAnimationFrame(loop);
+        if (!animLoopId) animLoopId = requestAnimationFrame(loop);
     }
 
-    function bindLinks() {
-        var badges = doc.querySelectorAll('.companion-link');
+    function bindCompanionLinks() {
+        var badges = document.querySelectorAll('.companion-link');
         badges.forEach(function(b) {
-            if (b.dataset.activeBridge) return;
-            b.dataset.activeBridge = 'true';
+            if (b.dataset.bridgeReady === 'true') return;
+            b.dataset.bridgeReady = 'true';
 
             b.addEventListener('mouseenter', function() {
                 var targetKey = b.getAttribute('data-target');
@@ -1275,8 +1201,7 @@ companion_client_script = """
 
                     targetNode.style.setProperty('--highlight-color', colorHex);
                     targetNode.classList.add('companion-frame-active');
-                    
-                    smoothScrollCenter(targetNode, 680);
+                    smoothScrollCenter(targetNode);
                     startLoop();
                 }
             });
@@ -1292,7 +1217,7 @@ companion_client_script = """
                 var targetKey = b.getAttribute('data-target');
                 var targetNode = findTarget(targetKey);
                 if (!targetNode && targetKey === 'telemetry') {
-                    var labels = Array.from(doc.querySelectorAll('[data-testid="stRadio"] label'));
+                    var labels = Array.from(document.querySelectorAll('[data-testid="stRadio"] label'));
                     var targetLabel = labels.find(function(l) { 
                         return l.textContent.indexOf('Vista Dual') !== -1 || l.textContent.indexOf('Ambiente 2') !== -1; 
                     });
@@ -1300,35 +1225,38 @@ companion_client_script = """
                         targetLabel.click();
                         setTimeout(function() {
                             var tNode = findTarget('telemetry');
-                            if (tNode) smoothScrollCenter(tNode, 680);
-                        }, 220);
+                            if (tNode) smoothScrollCenter(tNode);
+                        }, 300);
                     }
                 } else if (targetNode) {
-                    smoothScrollCenter(targetNode, 680);
+                    smoothScrollCenter(targetNode);
                 }
             });
         });
     }
 
-    setInterval(bindLinks, 550);
+    setInterval(bindCompanionLinks, 500);
 })();
 """
 
-# Native, safe iframe injection with duplicate script guard
+# Native, safe iframe injection with clean DOM replacement
 components.html(f"""
 <!DOCTYPE html>
 <html>
 <body>
 <script>
 try {{
-    var doc = window.parent.document;
-    if (!doc.getElementById('companion-controller-script')) {{
-        var scriptEl = doc.createElement('script');
-        scriptEl.id = 'companion-controller-script';
-        scriptEl.type = 'text/javascript';
-        scriptEl.text = {json.dumps(companion_client_script)};
-        doc.body.appendChild(scriptEl);
-    }}
+    var win = window.parent || window;
+    var doc = win.document;
+    
+    var prev = doc.getElementById('companion-runtime-script');
+    if (prev) prev.remove();
+
+    var scriptEl = doc.createElement('script');
+    scriptEl.id = 'companion-runtime-script';
+    scriptEl.type = 'text/javascript';
+    scriptEl.textContent = {json.dumps(companion_client_script)};
+    doc.body.appendChild(scriptEl);
 }} catch(err) {{
     console.warn("Companion parent hook notice:", err);
 }}
