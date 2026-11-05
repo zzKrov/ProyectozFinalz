@@ -168,10 +168,19 @@ div:has(> iframe[src*="wokwi.com"]),
 /* Theatrical DOM Frame Highlight */
 .companion-frame-active {{
     outline: 2.5px solid var(--highlight-color, #38bdf8) !important;
-    outline-offset: 6px !important;
+    outline-offset: 8px !important;
     box-shadow: 0 0 35px var(--highlight-color, #38bdf8), inset 0 0 20px rgba(56, 189, 248, 0.15) !important;
     border-radius: 14px !important;
     transition: outline 0.25s ease, box-shadow 0.25s ease !important;
+}}
+
+/* Autopilot Section Transition */
+.autopilot-reveal {{
+    animation: autoReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}}
+@keyframes autoReveal {{
+    from {{ opacity: 0; transform: translateY(-16px); }}
+    to   {{ opacity: 1; transform: translateY(0); }}
 }}
 
 .story-card {{
@@ -534,6 +543,9 @@ view_mode = st.radio(
     index=0,
     key="nav_view_mode_radio"
 )
+
+# Metadata token for autopilot synchronization
+st.markdown(f'<div id="active-view-mode-meta" data-mode="{view_mode}" style="display:none;"></div>', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -898,29 +910,59 @@ def render_ambiente_2():
         """)
 
 # =========================================================================
-# ROUTING & DUAL VIEW ENGINE
+# ROUTING & DUAL VIEW ENGINE WITH AUTOPILOT CONTAINERS
 # =========================================================================
-show_amb1 = ("Ambiente 1" in view_mode) or ("Vista Dual" in view_mode)
-show_amb2 = ("Ambiente 2" in view_mode) or ("Vista Dual" in view_mode)
-
-if show_amb1:
-    st.markdown('<div id="ambience-1-wrapper">', unsafe_allow_html=True)
+# Both containers are rendered in DOM to enable instant hover autopilot navigation
+with st.container():
+    st.markdown('<div id="ambience-1-anchor"></div>', unsafe_allow_html=True)
     render_ambiente_1()
-    st.markdown('</div>', unsafe_allow_html=True)
 
-if "Vista Dual" in view_mode:
-    st.markdown("---")
+st.markdown('<div id="ambience-divider" style="margin: 24px 0; border-top: 1px solid rgba(192,132,252,0.25);"></div>', unsafe_allow_html=True)
 
-if show_amb2:
-    st.markdown('<div id="ambience-2-wrapper">', unsafe_allow_html=True)
+with st.container():
+    st.markdown('<div id="ambience-2-anchor"></div>', unsafe_allow_html=True)
     render_ambiente_2()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Reliable Injected Runtime (Direct Parent Execution)
+# Dynamic Autopilot & Celestial Stardust Particle Engine
 # ---------------------------------------------------------
 companion_client_script = """
 (function() {
+    function getAmb1Container() {
+        var a = document.getElementById('ambience-1-anchor');
+        return a ? (a.closest('[data-testid="stVerticalBlock"]') || a.parentElement) : null;
+    }
+    function getAmb2Container() {
+        var a = document.getElementById('ambience-2-anchor');
+        return a ? (a.closest('[data-testid="stVerticalBlock"]') || a.parentElement) : null;
+    }
+    function getDivider() {
+        return document.getElementById('ambience-divider');
+    }
+
+    function syncEnvironmentVisibility() {
+        var meta = document.getElementById('active-view-mode-meta');
+        var mode = meta ? (meta.getAttribute('data-mode') || '') : '';
+        var amb1 = getAmb1Container();
+        var amb2 = getAmb2Container();
+        var div = getDivider();
+
+        if (mode.indexOf('Dual') !== -1) {
+            if (amb1) amb1.style.display = 'block';
+            if (amb2) amb2.style.display = 'block';
+            if (div) div.style.display = 'block';
+        } else if (mode.indexOf('Ambiente 2') !== -1) {
+            if (amb1 && !amb1.dataset.autopilotActive) amb1.style.display = 'none';
+            if (amb2) amb2.style.display = 'block';
+            if (div) div.style.display = 'none';
+        } else {
+            // Ambiente 1
+            if (amb1) amb1.style.display = 'block';
+            if (amb2 && !amb2.dataset.autopilotActive) amb2.style.display = 'none';
+            if (div && !amb2.dataset.autopilotActive) div.style.display = 'none';
+        }
+    }
+
     function findTarget(key) {
         if (key === 'canvas') {
             var anchor = document.getElementById('target-anchor-canvas');
@@ -937,7 +979,7 @@ companion_client_script = """
             return document.getElementById('target-story-box') || document.querySelector('.story-card');
         }
         if (key === 'telemetry') {
-            return document.getElementById('target-telemetry-box') || document.getElementById('ambience-2-wrapper');
+            return document.getElementById('target-telemetry-box') || document.getElementById('ambience-2-anchor');
         }
         return null;
     }
@@ -950,7 +992,6 @@ companion_client_script = """
             activeScrollAnim = null;
         }
 
-        // Determine real scroll container
         var container = null;
         var p = element.parentElement;
         while (p && p !== document.body) {
@@ -1039,27 +1080,121 @@ companion_client_script = """
     window.addEventListener('resize', resize);
 
     var particles = [];
+    var impacts = [];
     var isHover = false;
     var currentBadge = null;
     var currentTarget = null;
     var currentHex = '#38bdf8';
     var animLoopId = null;
+    var autopilotTimer = null;
 
     function spawnStardust() {
         if (!isHover || !currentBadge || !currentTarget) return;
-        
+
         for (var i = 0; i < 3; i++) {
             particles.push({
                 t: 0,
-                speed: 0.024 + Math.random() * 0.018,
-                size: 1.8 + Math.random() * 2.6,
-                arcOffset: (Math.random() - 0.5) * 70,
-                targetYRatio: 0.2 + Math.random() * 0.6,
-                wobbleAmp: 4 + Math.random() * 8,
+                speed: 0.022 + Math.random() * 0.016,
+                size: 2.2 + Math.random() * 3.4,
+                rot: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.12,
+                type: Math.random() > 0.4 ? 'star' : 'diamond',
+                arcOffset: (Math.random() - 0.5) * 75,
+                targetYRatio: 0.15 + Math.random() * 0.7,
+                wobbleAmp: 5 + Math.random() * 9,
                 phase: Math.random() * Math.PI * 2,
-                color: Math.random() > 0.35 ? currentHex : '#ffffff'
+                color: Math.random() > 0.3 ? currentHex : '#ffffff'
             });
         }
+    }
+
+    // 8-Point Astronomical Diamond Star
+    function drawCelestialStar(x, y, radius, color, alpha, rot) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rot);
+        ctx.globalAlpha = Math.max(0, Math.min(alpha, 1));
+
+        ctx.shadowColor = color;
+        ctx.shadowBlur = radius * 3.5;
+        ctx.fillStyle = color;
+
+        // 4 Primary Long Diamond Rays
+        ctx.beginPath();
+        var outerR = radius * 2.5;
+        var innerR = radius * 0.35;
+        for (var i = 0; i < 4; i++) {
+            var a = (i * Math.PI) / 2;
+            var x1 = Math.cos(a) * outerR;
+            var y1 = Math.sin(a) * outerR;
+            var aMid = a + Math.PI / 4;
+            var xMid = Math.cos(aMid) * innerR;
+            var yMid = Math.sin(aMid) * innerR;
+            if (i === 0) ctx.moveTo(x1, y1);
+            else ctx.lineTo(x1, y1);
+            ctx.lineTo(xMid, yMid);
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        // 4 Secondary Diagonal Rays
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        var diagR = outerR * 0.45;
+        var diagInner = innerR * 0.25;
+        for (var j = 0; j < 4; j++) {
+            var da = (j * Math.PI) / 2 + Math.PI / 4;
+            var dx = Math.cos(da) * diagR;
+            var dy = Math.sin(da) * diagR;
+            var daMid = da + Math.PI / 4;
+            var dxMid = Math.cos(daMid) * diagInner;
+            var dyMid = Math.sin(daMid) * diagInner;
+            if (j === 0) ctx.moveTo(dx, dy);
+            else ctx.lineTo(dx, dy);
+            ctx.lineTo(dxMid, dyMid);
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        // Brilliant White Core
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // Prismatic Diamond Rhombus
+    function drawStardustDiamond(x, y, radius, color, alpha, rot) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rot);
+        ctx.globalAlpha = Math.max(0, Math.min(alpha, 1));
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = radius * 2.6;
+
+        ctx.beginPath();
+        ctx.moveTo(0, -radius * 1.8);
+        ctx.lineTo(radius * 0.75, 0);
+        ctx.lineTo(0, radius * 1.8);
+        ctx.lineTo(-radius * 0.75, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // White Diamond Core
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(0, -radius * 0.9);
+        ctx.lineTo(radius * 0.35, 0);
+        ctx.lineTo(0, radius * 0.9);
+        ctx.lineTo(-radius * 0.35, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
     }
 
     function drawTheatricalFrame(rect, hex) {
@@ -1075,10 +1210,10 @@ companion_client_script = """
         ctx.strokeStyle = hex;
         ctx.shadowColor = hex;
 
-        // 1. L-Shaped Corner Brackets
+        // 1. Neon Corner L-Brackets
         var cLen = Math.min(24, bw / 4, bh / 4);
         ctx.lineWidth = 3.5;
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 22;
         ctx.globalAlpha = 0.95;
 
         // Top-Left
@@ -1109,7 +1244,7 @@ companion_client_script = """
         ctx.lineTo(bx, by + bh - cLen);
         ctx.stroke();
 
-        // 2. Pulsing Perimeter Aura
+        // 2. Pulsing Perimeter Boundary
         var pulse = 0.35 + 0.25 * Math.sin(Date.now() / 220);
         ctx.lineWidth = 1.5;
         ctx.shadowBlur = 14;
@@ -1135,13 +1270,22 @@ companion_client_script = """
             for (var j = particles.length - 1; j >= 0; j--) {
                 var pt = particles[j];
                 pt.t += pt.speed;
+                pt.rot += pt.rotSpeed;
 
                 if (pt.t >= 1) {
+                    // Spawn celestial impact sparkles on the target frame
+                    impacts.push({
+                        x: rB.right + 4,
+                        y: rB.top + rB.height * pt.targetYRatio,
+                        radius: 2 + Math.random() * 4,
+                        color: pt.color,
+                        life: 1.0,
+                        decay: 0.05
+                    });
                     particles.splice(j, 1);
                     continue;
                 }
 
-                // Dynamic live coordinates
                 var x0 = rA.left - 4;
                 var y0 = rA.top + rA.height / 2;
                 var x1 = rB.right + 6;
@@ -1156,21 +1300,38 @@ companion_client_script = """
 
                 curY += Math.sin(pt.t * Math.PI * 3 + pt.phase) * pt.wobbleAmp;
 
-                var alpha = pt.t < 0.2 ? (pt.t / 0.2) : (1 - pt.t);
+                var alpha = pt.t < 0.18 ? (pt.t / 0.18) : (1 - pt.t);
+                var twinkle = alpha * (0.8 + 0.2 * Math.sin(pt.t * 18 + pt.phase));
 
-                ctx.save();
-                ctx.fillStyle = pt.color;
-                ctx.shadowColor = pt.color;
-                ctx.shadowBlur = 10;
-                ctx.globalAlpha = Math.max(0, Math.min(alpha, 1));
-                ctx.beginPath();
-                ctx.arc(curX, curY, pt.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
+                if (pt.type === 'star') {
+                    drawCelestialStar(curX, curY, pt.size, pt.color, twinkle, pt.rot);
+                } else {
+                    drawStardustDiamond(curX, curY, pt.size, pt.color, twinkle, pt.rot);
+                }
             }
         }
 
-        if (particles.length > 0 || isHover) {
+        // Render Frame Impact Sparks
+        for (var k = impacts.length - 1; k >= 0; k--) {
+            var imp = impacts[k];
+            imp.life -= imp.decay;
+            if (imp.life <= 0) {
+                impacts.splice(k, 1);
+                continue;
+            }
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(imp.x, imp.y, imp.radius * (2 - imp.life), 0, Math.PI * 2);
+            ctx.strokeStyle = imp.color;
+            ctx.shadowColor = imp.color;
+            ctx.shadowBlur = 12;
+            ctx.globalAlpha = imp.life;
+            ctx.lineWidth = 1.6;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        if (particles.length > 0 || impacts.length > 0 || isHover) {
             animLoopId = requestAnimationFrame(loop);
         } else {
             animLoopId = null;
@@ -1183,16 +1344,46 @@ companion_client_script = """
     }
 
     function bindCompanionLinks() {
+        syncEnvironmentVisibility();
+
         var badges = document.querySelectorAll('.companion-link');
         badges.forEach(function(b) {
             if (b.dataset.bridgeReady === 'true') return;
             b.dataset.bridgeReady = 'true';
 
+            // HOVER AUTOPILOT (ZERO CLICKS REQUIRED)
             b.addEventListener('mouseenter', function() {
+                if (autopilotTimer) {
+                    clearTimeout(autopilotTimer);
+                    autopilotTimer = null;
+                }
+
                 var targetKey = b.getAttribute('data-target');
                 var colorHex = b.getAttribute('data-color') || '#38bdf8';
-                var targetNode = findTarget(targetKey);
 
+                // Autopilot reveal for Telemetry if currently hidden
+                if (targetKey === 'telemetry') {
+                    var amb2 = getAmb2Container();
+                    var div = getDivider();
+                    if (amb2 && (amb2.style.display === 'none' || getComputedStyle(amb2).display === 'none')) {
+                        amb2.style.display = 'block';
+                        amb2.dataset.autopilotActive = 'true';
+                        amb2.classList.add('autopilot-reveal');
+                        if (div) div.style.display = 'block';
+                    }
+                }
+
+                // Autopilot reveal for Canvas/Stage if currently hidden
+                if (targetKey === 'canvas' || targetKey === 'stage' || targetKey === 'story') {
+                    var amb1 = getAmb1Container();
+                    if (amb1 && (amb1.style.display === 'none' || getComputedStyle(amb1).display === 'none')) {
+                        amb1.style.display = 'block';
+                        amb1.dataset.autopilotActive = 'true';
+                        amb1.classList.add('autopilot-reveal');
+                    }
+                }
+
+                var targetNode = findTarget(targetKey);
                 if (targetNode) {
                     isHover = true;
                     currentBadge = b;
@@ -1211,31 +1402,20 @@ companion_client_script = """
                 if (currentTarget) currentTarget.classList.remove('companion-frame-active');
                 currentTarget = null;
                 currentBadge = null;
-            });
 
-            b.addEventListener('click', function() {
-                var targetKey = b.getAttribute('data-target');
-                var targetNode = findTarget(targetKey);
-                if (!targetNode && targetKey === 'telemetry') {
-                    var labels = Array.from(document.querySelectorAll('[data-testid="stRadio"] label'));
-                    var targetLabel = labels.find(function(l) { 
-                        return l.textContent.indexOf('Vista Dual') !== -1 || l.textContent.indexOf('Ambiente 2') !== -1; 
-                    });
-                    if (targetLabel) {
-                        targetLabel.click();
-                        setTimeout(function() {
-                            var tNode = findTarget('telemetry');
-                            if (tNode) smoothScrollCenter(tNode);
-                        }, 300);
-                    }
-                } else if (targetNode) {
-                    smoothScrollCenter(targetNode);
-                }
+                // Autopilot restore after leaving
+                autopilotTimer = setTimeout(function() {
+                    var amb1 = getAmb1Container();
+                    var amb2 = getAmb2Container();
+                    if (amb1) delete amb1.dataset.autopilotActive;
+                    if (amb2) delete amb2.dataset.autopilotActive;
+                    syncEnvironmentVisibility();
+                }, 1800);
             });
         });
     }
 
-    setInterval(bindCompanionLinks, 500);
+    setInterval(bindCompanionLinks, 400);
 })();
 """
 
