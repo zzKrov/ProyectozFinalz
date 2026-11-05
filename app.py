@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Luminous Theme & Pure CSS Drawer (Flush-Left HTML)
+# Luminous Theme & Transparent Drawer (No Blur on Site)
 # ---------------------------------------------------------
 magical_theme = """
 <style>
@@ -79,35 +79,16 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-top: 2px;
 }
 
-.target-canvas, .target-stage, .target-story {
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+/* Full Target Boxes Highlight Animations */
+.companion-target-highlight {
+    outline: 3.5px solid var(--highlight-color, #38bdf8) !important;
+    box-shadow: 0 0 45px var(--highlight-color, #38bdf8), 0 0 80px rgba(192, 132, 252, 0.4) !important;
+    border-radius: 16px !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transform: scale(1.012) !important;
 }
 
-.highlight-active-cyan {
-    outline: 3px solid #38bdf8 !important;
-    box-shadow: 0 0 40px rgba(56, 189, 248, 0.85), 0 0 70px rgba(192, 132, 252, 0.5) !important;
-    transform: scale(1.015) !important;
-    z-index: 50 !important;
-}
-.highlight-active-red {
-    outline: 3px solid #f43f5e !important;
-    box-shadow: 0 0 45px rgba(244, 63, 94, 0.85) !important;
-    transform: scale(1.015) !important;
-    z-index: 50 !important;
-}
-.highlight-active-gold {
-    outline: 3px solid #fbbf24 !important;
-    box-shadow: 0 0 45px rgba(251, 191, 36, 0.85) !important;
-    transform: scale(1.015) !important;
-    z-index: 50 !important;
-}
-.highlight-active-purple {
-    outline: 3px solid #c084fc !important;
-    box-shadow: 0 0 45px rgba(192, 132, 252, 0.9) !important;
-    transform: scale(1.015) !important;
-    z-index: 50 !important;
-}
-
+/* Story Card */
 .story-card {
     background: rgba(26, 20, 56, 0.65);
     border: 1px solid rgba(192, 132, 252, 0.3);
@@ -116,6 +97,7 @@ html, body, [data-testid="stAppViewContainer"] {
     border-radius: 16px;
     padding: 16px 20px;
     margin-top: 8px;
+    transition: all 0.3s ease;
 }
 .story-heading {
     font-family: 'Playfair Display', serif;
@@ -153,6 +135,7 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-top: 6px;
 }
 
+/* Stage Box */
 .stage-box {
     position: relative;
     border-radius: 16px;
@@ -160,6 +143,7 @@ html, body, [data-testid="stAppViewContainer"] {
     border: 1px solid rgba(192, 132, 252, 0.35);
     box-shadow: 0 0 30px rgba(112, 0, 255, 0.2);
     background: #0d0a1f;
+    transition: all 0.3s ease;
 }
 .hologram-overlay-container {
     position: relative;
@@ -194,7 +178,7 @@ div.stButton > button {
 }
 
 /* ------------------------------------------------------------- */
-/* PURE CSS DRAWER                                               */
+/* PURE CSS DRAWER (TRANSPARENT BACKDROP - NO SITE BLUR)         */
 /* ------------------------------------------------------------- */
 .drawer-checkbox {
     display: none !important;
@@ -254,7 +238,7 @@ div.stButton > button {
     position: fixed;
     top: 0;
     right: 0;
-    width: 490px;
+    width: 480px;
     max-width: 90vw;
     height: 100vh;
     background: rgba(15, 11, 33, 0.97) !important;
@@ -270,16 +254,17 @@ div.stButton > button {
     box-sizing: border-box;
 }
 
+/* Backdrop: Pure Clickable Shield with NO Blur and Minimal Tint */
 .drawer-backdrop {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(5, 4, 13, 0.65);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(5, 4, 13, 0.18) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     z-index: 9999999 !important;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.35s ease;
+    transition: opacity 0.3s ease;
 }
 
 .drawer-checkbox:checked ~ .drawer-panel {
@@ -422,8 +407,8 @@ div.stButton > button {
 </div>
 <div class="drawer-section-title">⚙️ ¿Cómo funciona?</div>
 <ol style="padding-left:18px;margin-top:4px;">
-<li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan" data-target="canvas" data-color="cyan">🔍 Resaltar Lienzo de Dibujo</span></li>
-<li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple" data-target="story" data-color="purple">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
+<li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan" data-target="canvas" data-color="#38bdf8">🔍 Resaltar Lienzo de Dibujo</span></li>
+<li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple" data-target="story" data-color="#c084fc">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
 <li style="margin-bottom:10px;"><b>El escenario cobra vida:</b><ul style="padding-left:16px;margin-top:4px;"><li>En tu pantalla, tu dibujo aparece recortado flotando y bailando sobre el escenario.</li><li>Por internet (vía MQTT), la placa ESP32 en Wokwi recibe la orden: abre los telones, enciende las luces del color del cuento, eleva al personaje y toca la melodía con su zumbador como una cajita de música.</li></ul></li>
 </ol>
 <div class="image-slot">
@@ -433,9 +418,9 @@ div.stButton > button {
 </div>
 <div class="drawer-section-title">🦾 ¿Qué hace cada servomotor exactamente?</div>
 <ul style="padding-left:18px;margin-top:4px;">
-<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red" data-target="stage" data-color="red">🎭 Resaltar Telones en Escenario</span></li>
-<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold" data-target="stage" data-color="gold">🚀 Resaltar Elevador Mecánico</span></li>
-<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan" data-target="stage" data-color="cyan">🌪️ Resaltar Máquina de Viento</span></li>
+<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red" data-target="stage" data-color="#f43f5e">🎭 Resaltar Telones en Escenario</span></li>
+<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold" data-target="stage" data-color="#fbbf24">🚀 Resaltar Elevador Mecánico</span></li>
+<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan" data-target="stage" data-color="#38bdf8">🌪️ Resaltar Máquina de Viento</span></li>
 </ul>
 <div class="drawer-section-title">💡 El resto del hardware:</div>
 <ul style="padding-left:18px;margin-top:4px;">
@@ -443,7 +428,7 @@ div.stButton > button {
 <li style="margin-bottom:6px;"><b>Pantalla OLED:</b> Muestra el título de la obra y el nombre de la partitura que está sonando.</li>
 <li style="margin-bottom:6px;"><b>Zumbador:</b> Toca la partitura que compuso la IA nota por nota a un volumen suave.</li>
 </ul>
-<div style="text-align:center;margin-top:25px;padding-top:15px;border-top:1px solid rgba(192,132,252,0.2);font-size:0.8rem;color:#94a3b8;">Tip: Pasa el mouse sobre los botones de arriba para iluminar los módulos del sitio en tiempo real.</div>
+<div style="text-align:center;margin-top:25px;padding-top:15px;border-top:1px solid rgba(192,132,252,0.2);font-size:0.8rem;color:#94a3b8;">Pasa el mouse sobre los botones para lanzar partículas hacia cada elemento.</div>
 </div>
 </div>
 """
@@ -544,15 +529,13 @@ air_canvas = components.declare_component("air_canvas", path=component_path)
 col_draw, col_stage = st.columns([1.0, 1.05], gap="large")
 
 # ---------------------------------------------------------
-# Column 1: Drawing Canvas (Wrapped in target-canvas for companion)
+# Column 1: Drawing Canvas
 # ---------------------------------------------------------
 with col_draw:
-    st.markdown('<div class="target-canvas">', unsafe_allow_html=True)
     current_chapter_num = len(st.session_state.story_chapters) + 1
     st.markdown(f"##### 🪞 El Espejo de Luz &bull; *Capítulo {current_chapter_num}*")
     st.caption("Pellizca el índice y el pulgar para pintar con polvo de estrellas.")
     canvas_output = air_canvas(default=None, key="air_canvas_ui")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # Sequential Storytelling & Fast Composition Pipeline
@@ -706,7 +689,7 @@ if canvas_output:
         st.error(f"❌ Error al generar historia: {err}")
 
 # ---------------------------------------------------------
-# Column 2: Stage & Story (Wrapped in target-stage & target-story)
+# Column 2: Stage & Story
 # ---------------------------------------------------------
 with col_stage:
     col_st_title, col_btns = st.columns([0.55, 0.45])
@@ -747,8 +730,8 @@ with col_stage:
 
     st.caption("💡 *Asegúrate de pulsar el botón verde ▶️ (Play) dentro de Wokwi para encender el escenario.*")
 
-    # The Persistent Wokwi Stage (Target for companion highlighter)
-    st.markdown('<div class="target-stage stage-box">', unsafe_allow_html=True)
+    # The Persistent Wokwi Stage
+    st.markdown('<div class="stage-box" id="target-stage-box">', unsafe_allow_html=True)
     components.iframe(
         f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram&v={st.session_state.wokwi_session_token}",
         height=350
@@ -763,12 +746,11 @@ with col_stage:
         </div>
         """, unsafe_allow_html=True)
 
-    # Active Chapter Story Card (Target for companion highlighter)
-    st.markdown('<div class="target-story">', unsafe_allow_html=True)
+    # Active Chapter Story Card
     if st.session_state.story_chapters:
         latest = st.session_state.story_chapters[-1]
         st.markdown(f"""
-        <div class="story-card">
+        <div class="story-card" id="target-story-box">
           <div>
             <span class="chapter-badge">Capítulo {latest['num']} &bull; {latest['entity']}</span>
             <span class="music-badge">🎼 {latest.get('score_title', 'Partitura')} ({latest.get('score_mood', 'Mágico')})</span>
@@ -782,13 +764,12 @@ with col_stage:
             st.audio(st.session_state.current_audio, format="audio/mp3", autoplay=True)
     else:
         st.markdown("""
-        <div class="story-card" style="text-align: center; padding: 24px;">
+        <div class="story-card" id="target-story-box" style="text-align: center; padding: 24px;">
           <div style="font-size: 2rem; margin-bottom: 6px;">✨📜</div>
           <div style="color: #cbd5e1; font-weight: 500;">El teatro está en penumbra esperando la función</div>
           <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Dibuja la primera criatura o paisaje para abrir el telón y escuchar su música original.</div>
         </div>
         """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # Full Illustrated Chronicle Log
@@ -807,41 +788,214 @@ if len(st.session_state.story_chapters) > 1:
             st.caption(ch["text"])
 
 # ---------------------------------------------------------
-# Companion Highlighter Bridge (Hooks Hover to DOM Outlines)
+# Stardust Particle Trail & Full-Box Spotlight Bridge
 # ---------------------------------------------------------
 components.html("""
 <script>
-function initCompanion() {
-    try {
-        const pDoc = window.parent.document;
-        if (!pDoc) return;
-        
-        const links = pDoc.querySelectorAll('.companion-link');
-        links.forEach(link => {
+(function() {
+    var pDoc = window.parent.document;
+    if (!pDoc) return;
+
+    // 1. Create or get full-screen overlay canvas for stardust particles
+    var canvas = pDoc.getElementById('companion-trail-canvas');
+    if (!canvas) {
+        canvas = pDoc.createElement('canvas');
+        canvas.id = 'companion-trail-canvas';
+        canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999999;';
+        pDoc.body.appendChild(canvas);
+    }
+    var ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+        canvas.width = window.parent.innerWidth;
+        canvas.height = window.parent.innerHeight;
+    }
+    resizeCanvas();
+    window.parent.addEventListener('resize', resizeCanvas);
+
+    // Particle physics system
+    var particles = [];
+    var isHovering = false;
+    var currentSource = null;
+    var currentTarget = null;
+    var currentColor = '#38bdf8';
+    var animFrameId = null;
+
+    function getTargetElement(key) {
+        if (key === 'canvas') {
+            return pDoc.querySelector('iframe[title="canvas_component.air_canvas"]') || 
+                   pDoc.querySelector('[data-testid="stCustomComponentV1"]') ||
+                   pDoc.querySelector('[data-testid="stColumn"]:first-child');
+        }
+        if (key === 'stage') {
+            return pDoc.getElementById('target-stage-box') || pDoc.querySelector('.stage-box');
+        }
+        if (key === 'story') {
+            return pDoc.getElementById('target-story-box') || pDoc.querySelector('.story-card');
+        }
+        return null;
+    }
+
+    function spawnParticles() {
+        if (!isHovering || !currentSource || !currentTarget) return;
+
+        var rectA = currentSource.getBoundingClientRect();
+        var rectB = currentTarget.getBoundingClientRect();
+
+        // Start point: Left edge of hovered badge in the drawer
+        var x0 = rectA.left;
+        var y0 = rectA.top + rectA.height / 2;
+
+        // End point: Center-right border of the highlighted target box
+        var x1 = rectB.right;
+        var y1 = rectB.top + rectB.height / 2;
+
+        // Arched bezier control point
+        var cx = (x0 + x1) / 2;
+        var cy = Math.min(y0, y1) - 80;
+
+        // Emit 3-4 glowing stardust sparks per frame
+        for (var i = 0; i < 3; i++) {
+            particles.push({
+                x0: x0,
+                y0: y0,
+                x1: x1,
+                y1: y1,
+                cx: cx,
+                cy: cy,
+                t: 0,
+                speed: 0.02 + Math.random() * 0.02,
+                size: 2.2 + Math.random() * 3.5,
+                wobble: (Math.random() - 0.5) * 16,
+                color: currentColor,
+                alpha: 1
+            });
+        }
+    }
+
+    function renderLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        spawnParticles();
+
+        // 1. Draw glowing corner beacon on the full target box
+        if (isHovering && currentTarget) {
+            var r = currentTarget.getBoundingClientRect();
+            var pad = 6;
+            var bx = r.left - pad;
+            var by = r.top - pad;
+            var bw = r.width + pad * 2;
+            var bh = r.height + pad * 2;
+
+            // Full box pulsating neon perimeter
+            ctx.save();
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = currentColor;
+            ctx.shadowBlur = 24;
+
+            // Rounded rectangle path
+            ctx.beginPath();
+            ctx.roundRect ? ctx.roundRect(bx, by, bw, bh, 14) : ctx.strokeRect(bx, by, bw, bh);
+            ctx.stroke();
+
+            // Corner targeting brackets
+            var len = 20;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            // Top Left
+            ctx.moveTo(bx, by + len); ctx.lineTo(bx, by); ctx.lineTo(bx + len, by);
+            // Top Right
+            ctx.moveTo(bx + bw - len, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + len);
+            // Bottom Left
+            ctx.moveTo(bx, by + bh - len); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + len, by + bh);
+            // Bottom Right
+            ctx.moveTo(bx + bw - len, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - len);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // 2. Animate and draw traveling stardust particles
+        for (var j = particles.length - 1; j >= 0; j--) {
+            var p = particles[j];
+            p.t += p.speed;
+
+            if (p.t >= 1) {
+                particles.splice(j, 1);
+                continue;
+            }
+
+            // Quadratic Bezier interpolation
+            var invT = 1 - p.t;
+            var curX = invT * invT * p.x0 + 2 * invT * p.t * p.cx + p.t * p.t * p.x1;
+            var curY = invT * invT * p.y0 + 2 * invT * p.t * p.cy + p.t * p.t * p.y1;
+
+            // Lateral wobble
+            curY += Math.sin(p.t * Math.PI * 4) * p.wobble;
+
+            // Spark appearance
+            var alpha = p.t < 0.2 ? p.t / 0.2 : (1 - p.t);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(curX, curY, p.size * (1 - p.t * 0.4), 0, 2 * Math.PI);
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 12;
+            ctx.globalAlpha = alpha;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        if (particles.length > 0 || isHovering) {
+            animFrameId = requestAnimationFrame(renderLoop);
+        } else {
+            animFrameId = null;
+        }
+    }
+
+    function startAnimation() {
+        if (!animFrameId) {
+            animFrameId = requestAnimationFrame(renderLoop);
+        }
+    }
+
+    // Attach listeners to companion links
+    function bindCompanionTriggers() {
+        var links = pDoc.querySelectorAll('.companion-link');
+        links.forEach(function(link) {
             if (link.dataset.bound) return;
             link.dataset.bound = "true";
 
-            link.addEventListener('mouseenter', () => {
-                const target = link.getAttribute('data-target');
-                const color = link.getAttribute('data-color') || 'cyan';
-                const el = pDoc.querySelector('.target-' + target);
-                if (el) {
-                    el.classList.remove('highlight-active-cyan', 'highlight-active-red', 'highlight-active-gold', 'highlight-active-purple');
-                    el.classList.add('highlight-active-' + color);
+            link.addEventListener('mouseenter', function() {
+                var targetKey = link.getAttribute('data-target');
+                var color = link.getAttribute('data-color') || '#38bdf8';
+                var targetEl = getTargetElement(targetKey);
+
+                if (targetEl) {
+                    isHovering = true;
+                    currentSource = link;
+                    currentTarget = targetEl;
+                    currentColor = color;
+
+                    targetEl.style.setProperty('--highlight-color', color);
+                    targetEl.classList.add('companion-target-highlight');
+
+                    startAnimation();
                 }
             });
 
-            link.addEventListener('mouseleave', () => {
-                const target = link.getAttribute('data-target');
-                const color = link.getAttribute('data-color') || 'cyan';
-                const el = pDoc.querySelector('.target-' + target);
-                if (el) {
-                    el.classList.remove('highlight-active-cyan', 'highlight-active-red', 'highlight-active-gold', 'highlight-active-purple');
+            link.addEventListener('mouseleave', function() {
+                isHovering = false;
+                if (currentTarget) {
+                    currentTarget.classList.remove('companion-target-highlight');
                 }
+                currentTarget = null;
+                currentSource = null;
             });
         });
-    } catch(e) {}
-}
-setInterval(initCompanion, 800);
+    }
+
+    setInterval(bindCompanionTriggers, 800);
+})();
 </script>
 """, height=0)
