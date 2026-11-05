@@ -3,6 +3,7 @@ import streamlit.components.v1 as components
 from openai import OpenAI
 import paho.mqtt.publish as publish
 import json
+import time
 import os
 
 st.set_page_config(
@@ -151,6 +152,10 @@ WOKWI_PROJECT_ID = "479816492813091841"
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_TOPIC = "air_draw_story/stage_cue"
 
+# Initialize Session Token once (bypasses browser cache on load, stays constant during play)
+if "wokwi_session_token" not in st.session_state:
+    st.session_state.wokwi_session_token = int(time.time())
+
 if "api_key" not in st.session_state:
     st.session_state.api_key = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
 if "story_chapters" not in st.session_state:
@@ -231,7 +236,7 @@ if canvas_output:
                    - kinematics: [base, hombro, codo, muñeca, herramienta] (ángulos de 25 a 155 grados).
                    - primary_rgb: [R, G, B] color luminoso principal para el anillo de estrellas.
                    - sec_rgb: [R, G, B] color secundario para las candilejas de suelo.
-                5. Compón una melodía mágica de 12 a 16 notas para el escenario:
+                5. Compón una melodía mágica de 10 a 14 notas para el escenario:
                    array "melody" con objetos {{"f": frecuencia_hz [260 a 950], "d": duracion_ms [120 a 300]}}.
 
                 Responde ÚNICAMENTE en JSON con esta estructura:
@@ -283,16 +288,20 @@ if canvas_output:
                     "audio": audio_bytes
                 })
 
-                # Hardware stage payload (optimized for fast transmission)
+                # Hardware stage payload (supports both naming schemes)
                 stage_payload = {
-                    "title": chapter_data.get("title", f"Capitulo {current_chapter_num}"),
+                    "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
+                    "model": chapter_data.get("title", "ACTO"),
+                    "primary_rgb": chapter_data.get("primary_rgb", [0, 240, 255]),
+                    "sec_rgb": chapter_data.get("sec_rgb", [192, 132, 252]),
                     "rgb1": chapter_data.get("primary_rgb", [0, 240, 255]),
                     "rgb2": chapter_data.get("sec_rgb", [192, 132, 252]),
+                    "kinematics": chapter_data.get("kinematics", [90, 55, 125, 80, 110]),
                     "angles": chapter_data.get("kinematics", [90, 55, 125, 80, 110]),
                     "melody": chapter_data.get("melody", [])
                 }
 
-                # Send to live Wokwi via MQTT
+                # Send cue to live Wokwi via MQTT
                 try:
                     publish.single(
                         MQTT_TOPIC,
@@ -310,24 +319,30 @@ if canvas_output:
         st.error(f"Hechizo interrumpido: {err}")
 
 with col_stage:
-    col_st_title, col_reset = st.columns([0.7, 0.3])
+    col_st_title, col_btns = st.columns([0.65, 0.35])
     with col_st_title:
         st.markdown("##### 🎪 El Escenario en Vivo & Holograma")
-    with col_reset:
-        if st.session_state.story_chapters:
-            if st.button("✨ Nueva Aventura"):
-                st.session_state.story_chapters = []
-                st.session_state.current_cutout = None
-                st.session_state.current_audio = None
-                st.session_state.processed_id = None
+    with col_btns:
+        btn_c1, btn_c2 = st.columns(2)
+        with btn_c1:
+            if st.button("🔄 Sync", help="Fuerza a Wokwi a recargar la última versión guardada"):
+                st.session_state.wokwi_session_token = int(time.time())
                 st.rerun()
+        with btn_c2:
+            if st.session_state.story_chapters:
+                if st.button("✨ Reset"):
+                    st.session_state.story_chapters = []
+                    st.session_state.current_cutout = None
+                    st.session_state.current_audio = None
+                    st.session_state.processed_id = None
+                    st.rerun()
 
     # -------------------------------------------------------------
-    # Persistent Wokwi Stage (Static URL prevents simulation reset)
+    # Persistent Wokwi Stage with Cache-Busting Version Token
     # -------------------------------------------------------------
     st.markdown('<div class="stage-box">', unsafe_allow_html=True)
     components.iframe(
-        f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram",
+        f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram&v={st.session_state.wokwi_session_token}",
         height=350
     )
     st.markdown('</div>', unsafe_allow_html=True)
