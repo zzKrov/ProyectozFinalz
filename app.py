@@ -19,6 +19,14 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
+# Global Constants & Configuration (Fixed Scope)
+# ---------------------------------------------------------
+WOKWI_PROJECT_ID = "479816492813091841"
+MQTT_BROKER = "broker.hivemq.com"
+MQTT_TOPIC = "air_draw_story/stage_cue"
+MQTT_TOPIC_TELEMETRY = "air_draw_story/telemetry"
+
+# ---------------------------------------------------------
 # Global Telemetry Store (Wokwi -> Streamlit)
 # ---------------------------------------------------------
 if "latest_telemetry" not in st.session_state:
@@ -31,11 +39,6 @@ if "latest_telemetry" not in st.session_state:
         "hora": "-"
     }
 
-MQTT_BROKER = "broker.hivemq.com"
-MQTT_TOPIC = "air_draw_story/stage_cue"
-MQTT_TOPIC_TELEMETRY = "air_draw_story/telemetry"
-
-# Background thread to receive live telemetry from Wokwi
 def start_telemetry_listener():
     def _on_msg(client, userdata, msg):
         try:
@@ -362,6 +365,7 @@ html, body, [data-testid="stAppViewContainer"] {{
     background: rgba(192, 132, 252, 0.25);
     border-radius: 10px;
 }}
+
 .drawer-section-title {{
     font-size: 1.05rem;
     font-weight: 700;
@@ -516,7 +520,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# THE AMBIENCE / VIEW SWITCHER
+# Navigation switcher for the two environments
 view_mode = st.radio(
     "Selecciona el Ambiente Interactivo:",
     options=[
@@ -525,7 +529,8 @@ view_mode = st.radio(
         "🪟 Vista Dual (Ambos Ambientes a la vez)"
     ],
     horizontal=True,
-    index=0
+    index=0,
+    key="nav_view_mode_radio"
 )
 
 st.markdown("<br>", unsafe_allow_html=True)
@@ -537,7 +542,7 @@ def render_ambiente_1():
     with st.expander("⚙️ Ajustes del Narrador & Conexión", expanded=not bool(st.session_state.api_key)):
         cfg_col1, cfg_col2, cfg_col3 = st.columns([1.2, 1, 1])
         with cfg_col1:
-            key_input = st.text_input("OpenAI API Key:", value=st.session_state.api_key, type="password", placeholder="sk-...")
+            key_input = st.text_input("OpenAI API Key:", value=st.session_state.api_key, type="password", placeholder="sk-...", key="key_input_amb1")
             if key_input != st.session_state.api_key:
                 st.session_state.api_key = key_input.strip()
                 st.rerun()
@@ -551,7 +556,8 @@ def render_ambiente_1():
                     "fable": "Fable (Teatral británica)",
                     "onyx": "Onyx (Profunda y Épica)",
                     "nova": "Nova (Luminosa y Vivaz)"
-                }.get(x, x)
+                }.get(x, x),
+                key="voice_select_amb1"
             )
             st.session_state.narrator_voice = voice_opt
         with cfg_col3:
@@ -559,7 +565,8 @@ def render_ambiente_1():
                 "Motor de IA:",
                 options=["gpt-4o-mini", "gpt-4o"],
                 index=0 if st.session_state.ai_model == "gpt-4o-mini" else 1,
-                format_func=lambda x: "Ultrarrápido (gpt-4o-mini ~1.5s)" if "mini" in x else "Alta Definición (gpt-4o)"
+                format_func=lambda x: "Ultrarrápido (gpt-4o-mini ~1.5s)" if "mini" in x else "Alta Definición (gpt-4o)",
+                key="model_select_amb1"
             )
             st.session_state.ai_model = model_opt
 
@@ -728,7 +735,7 @@ def render_ambiente_1():
         with col_btns:
             btn_c1, btn_c2, btn_c3 = st.columns(3)
             with btn_c1:
-                if st.button("🔔 Probar", help="Envía una partitura de prueba a Wokwi"):
+                if st.button("🔔 Probar", help="Envía una partitura de prueba a Wokwi", key="btn_probar_amb1"):
                     test_cue = {
                         "title": "Acto de Prueba",
                         "score_title": "Danza de Prueba",
@@ -746,12 +753,12 @@ def render_ambiente_1():
                     }
                     send_stage_cue(test_cue)
             with btn_c2:
-                if st.button("🔄 Sync", help="Fuerza a recargar el simulador Wokwi"):
+                if st.button("🔄 Sync", help="Fuerza a recargar el simulador Wokwi", key="btn_sync_amb1"):
                     st.session_state.wokwi_session_token = int(time.time())
                     st.rerun()
             with btn_c3:
                 if st.session_state.story_chapters:
-                    if st.button("✨ Reset"):
+                    if st.button("✨ Reset", key="btn_reset_amb1"):
                         st.session_state.story_chapters = []
                         st.session_state.current_cutout = None
                         st.session_state.current_audio = None
@@ -832,18 +839,18 @@ def render_ambiente_2():
         with tab_servos:
             c1, c2 = st.columns(2)
             with c1:
-                telon_izq = st.slider("Telón Izquierdo (Pin 13)", 0, 90, 0, help="0° cerrado, 90° abierto")
-                elevador = st.slider("Elevador de Atrezo (Pin 14)", 20, 150, 20, help="20° reposo, 140° escena")
+                telon_izq = st.slider("Telón Izquierdo (Pin 13)", 0, 90, 0, help="0° cerrado, 90° abierto", key="slider_telon_izq_amb2")
+                elevador = st.slider("Elevador de Atrezo (Pin 14)", 20, 150, 20, help="20° reposo, 140° escena", key="slider_elevador_amb2")
             with c2:
-                telon_der = st.slider("Telón Derecho (Pin 25)", 90, 180, 180, help="180° cerrado, 90° abierto")
-                viento = st.slider("Máquina de Viento (Pin 27)", 70, 110, 90, help="90° neutro")
+                telon_der = st.slider("Telón Derecho (Pin 25)", 90, 180, 180, help="180° cerrado, 90° abierto", key="slider_telon_der_amb2")
+                viento = st.slider("Máquina de Viento (Pin 27)", 70, 110, 90, help="90° neutro", key="slider_viento_amb2")
 
         with tab_luces:
-            c_sky = st.color_picker("Color Arco Proscenio (Cielo)", "#5A28DC")
-            c_foot = st.color_picker("Color Candilejas (Piso)", "#FFA032")
-            brillo = st.slider("Intensidad Luminosa (%)", 10, 100, 85)
+            c_sky = st.color_picker("Color Arco Proscenio (Cielo)", "#5A28DC", key="picker_sky_amb2")
+            c_foot = st.color_picker("Color Candilejas (Piso)", "#FFA032", key="picker_foot_amb2")
+            brillo = st.slider("Intensidad Luminosa (%)", 10, 100, 85, key="slider_brillo_amb2")
 
-        if st.button("📡 Enviar Comandos Manuales a Wokwi", type="primary"):
+        if st.button("📡 Enviar Comandos Manuales a Wokwi", type="primary", key="btn_send_manual_amb2"):
             h_sky = c_sky.lstrip("#")
             rgb_sky = [int(h_sky[i:i+2], 16) for i in (0, 2, 4)]
             h_foot = c_foot.lstrip("#")
@@ -864,7 +871,6 @@ def render_ambiente_2():
         st.subheader("2. Telemetría de Retorno en Vivo (Wokwi ➔ Streamlit)")
         st.caption("Verificación del canal de comunicación bidireccional MQTT:")
 
-        # Live telemetry box from Wokwi
         t_data = st.session_state.latest_telemetry
         st.markdown(f"""
         <div style="background: rgba(18, 14, 40, 0.8); border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 16px;">
@@ -881,7 +887,7 @@ def render_ambiente_2():
         </div>
         """, unsafe_allow_html=True)
 
-        if st.button("🔄 Refrescar Monitor de Telemetría"):
+        if st.button("🔄 Refrescar Monitor de Telemetría", key="btn_refresh_telemetry_amb2"):
             st.rerun()
 
         st.markdown("""
@@ -899,13 +905,13 @@ if "Ambiente 1" in view_mode:
 elif "Ambiente 2" in view_mode:
     render_ambiente_2()
 else:
-    # VISTA DUAL: AMBOS AMBIENTES A LA VEZ
+    # VISTA DUAL: AMBOS AMBIENTES SIMULTÁNEAMENTE
     render_ambiente_1()
     st.markdown("---")
     render_ambiente_2()
 
 # ---------------------------------------------------------
-# Companion Particle Trail Bridge
+# Stardust Particle Trail & Full-Box Spotlight Bridge
 # ---------------------------------------------------------
 components.html("""
 <script>
