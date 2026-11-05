@@ -2,11 +2,13 @@ import streamlit as st
 import streamlit.components.v1 as components
 from openai import OpenAI
 import paho.mqtt.publish as publish
+import paho.mqtt.client as mqtt
 import json
 import time
 import socket
 import re
 import base64
+import threading
 import os
 
 st.set_page_config(
@@ -17,7 +19,51 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Helper to Embed Images Safely in HTML
+# Global Telemetry Store (Wokwi -> Streamlit)
+# ---------------------------------------------------------
+if "latest_telemetry" not in st.session_state:
+    st.session_state.latest_telemetry = {
+        "origen": "ESP32_Wokwi",
+        "estado": "STANDBY",
+        "telon": "CERRADO",
+        "ultimo_acto": "Ninguno",
+        "uptime_seg": 0,
+        "hora": "-"
+    }
+
+MQTT_BROKER = "broker.hivemq.com"
+MQTT_TOPIC = "air_draw_story/stage_cue"
+MQTT_TOPIC_TELEMETRY = "air_draw_story/telemetry"
+
+# Background thread to receive live telemetry from Wokwi
+def start_telemetry_listener():
+    def _on_msg(client, userdata, msg):
+        try:
+            payload = json.loads(msg.payload.decode())
+            payload["hora"] = time.strftime("%H:%M:%S")
+            st.session_state.latest_telemetry = payload
+        except Exception:
+            pass
+
+    def _worker():
+        client = mqtt.Client(f"Streamlit_Monitor_{int(time.time())}")
+        client.on_message = _on_msg
+        try:
+            client.connect(MQTT_BROKER, 1883, 10)
+            client.subscribe(MQTT_TOPIC_TELEMETRY)
+            client.loop_forever()
+        except Exception:
+            pass
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+
+if "telemetry_thread_started" not in st.session_state:
+    st.session_state.telemetry_thread_started = True
+    start_telemetry_listener()
+
+# ---------------------------------------------------------
+# Helper to Embed Images Safely in HTML Report
 # ---------------------------------------------------------
 def render_report_image(filename, title, caption):
     if os.path.exists(filename):
@@ -27,7 +73,6 @@ def render_report_image(filename, title, caption):
                 return f"""<div class="image-slot"><img src="data:image/png;base64,{b64}" style="width:100%;border-radius:10px;border:1px solid rgba(192,132,252,0.4);display:block;"/><div class="image-slot-caption">{caption}</div></div>"""
         except Exception:
             pass
-    # Fallback placeholder if image file is not yet uploaded
     return f"""<div class="image-slot"><div style="font-size:1.3rem;">🖼️ <b>{filename}</b></div><div style="font-weight:600;font-size:0.85rem;color:#cbd5e1;margin-top:4px;">{title}</div><div class="image-slot-caption">{caption}</div></div>"""
 
 slot_img_4 = render_report_image("4.png", "Trazado Gestual en el Aire", "Figura 4: Gesto de pinza y dibujo en el aire frente a la webcam")
@@ -36,7 +81,7 @@ slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2:
 slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en directo — Música en zumbador, texto OLED y luces encendidas")
 
 # ---------------------------------------------------------
-# Luminous Theme & Pure CSS Drawer (Flush-Left HTML)
+# Luminous Theme & Pure CSS Drawer
 # ---------------------------------------------------------
 magical_theme = f"""
 <style>
@@ -79,13 +124,13 @@ html, body, [data-testid="stAppViewContainer"] {{
 
 .header-glow {{
     text-align: center;
-    padding: 8px 0 14px 0;
-    margin-bottom: 18px;
+    padding: 8px 0 10px 0;
+    margin-bottom: 10px;
     border-bottom: 1px solid rgba(192, 132, 252, 0.2);
 }}
 .app-title {{
     font-family: 'Playfair Display', serif;
-    font-size: 2.2rem;
+    font-size: 2.1rem;
     font-weight: 600;
     letter-spacing: -0.01em;
     background: linear-gradient(135deg, #fbcfe8 0%, #c084fc 45%, #38bdf8 100%);
@@ -94,7 +139,7 @@ html, body, [data-testid="stAppViewContainer"] {{
     filter: drop-shadow(0 0 20px rgba(192, 132, 252, 0.45));
 }}
 .app-subtitle {{
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     color: #cbd5e1;
     margin-top: 2px;
 }}
@@ -177,22 +222,10 @@ html, body, [data-testid="stAppViewContainer"] {{
     filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 35px rgba(192, 132, 252, 0.7));
 }}
 
-div.stButton > button {{
-    background: rgba(30, 27, 75, 0.7) !important;
-    color: #ede6de !important;
-    border: 1px solid rgba(192, 132, 252, 0.3) !important;
-    border-radius: 8px !important;
-    font-size: 0.8rem !important;
-    padding: 4px 12px !important;
-}}
-
-/* ------------------------------------------------------------- */
-/* PURE CSS DRAWER                                               */
-/* ------------------------------------------------------------- */
+/* Pure CSS Drawer */
 .drawer-checkbox {{
     display: none !important;
 }}
-
 .drawer-trigger-btn {{
     position: fixed;
     top: 14px;
@@ -201,7 +234,6 @@ div.stButton > button {{
     background: linear-gradient(135deg, rgba(192, 132, 252, 0.35), rgba(56, 189, 248, 0.35)) !important;
     border: 1.5px solid rgba(192, 132, 252, 0.8) !important;
     backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     color: #ffffff !important;
     padding: 8px 18px !important;
     border-radius: 30px !important;
@@ -225,7 +257,7 @@ div.stButton > button {{
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin-top: 6px;
+    margin-top: 4px;
     background: rgba(30, 27, 75, 0.8);
     border: 1px solid rgba(192, 132, 252, 0.5);
     color: #c084fc;
@@ -252,7 +284,6 @@ div.stButton > button {{
     height: 100vh;
     background: rgba(15, 11, 33, 0.97) !important;
     backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
     border-left: 1px solid rgba(192, 132, 252, 0.4) !important;
     box-shadow: -15px 0 55px rgba(0, 0, 0, 0.85) !important;
     z-index: 10000000 !important;
@@ -268,7 +299,6 @@ div.stButton > button {{
     top: 0; left: 0; width: 100vw; height: 100vh;
     background: rgba(5, 4, 13, 0.18) !important;
     backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
     z-index: 9999999 !important;
     opacity: 0;
     pointer-events: none;
@@ -332,7 +362,6 @@ div.stButton > button {{
     background: rgba(192, 132, 252, 0.25);
     border-radius: 10px;
 }}
-
 .drawer-section-title {{
     font-size: 1.05rem;
     font-weight: 700;
@@ -371,10 +400,6 @@ div.stButton > button {{
     color: #c084fc;
     border: 1px solid rgba(192, 132, 252, 0.45);
 }}
-.companion-link:hover {{
-    transform: translateY(-1px) scale(1.05);
-    filter: brightness(1.2);
-}}
 
 .image-slot {{
     width: 100%;
@@ -385,9 +410,6 @@ div.stButton > button {{
     padding: 12px;
     text-align: center;
     box-sizing: border-box;
-}}
-.image-slot:hover {{
-    border-color: #38bdf8;
 }}
 .image-slot-caption {{
     font-size: 0.78rem;
@@ -439,12 +461,8 @@ div.stButton > button {{
 st.markdown(magical_theme, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# State & Configuration
+# Synchronous MQTT Transmitter
 # ---------------------------------------------------------
-WOKWI_PROJECT_ID = "479816492813091841"
-MQTT_BROKER = "broker.hivemq.com"
-MQTT_TOPIC = "air_draw_story/stage_cue"
-
 def send_stage_cue(payload_dict):
     prev_timeout = socket.getdefaulttimeout()
     try:
@@ -483,12 +501,12 @@ if "narrator_voice" not in st.session_state:
     st.session_state.narrator_voice = "coral"
 
 # ---------------------------------------------------------
-# Header with Inline Button Backup
+# Header & Navigation Switcher (Rubric A3: 2 Ambientes)
 # ---------------------------------------------------------
 st.markdown("""
 <div class="header-glow">
   <div class="app-title">🎭 El Pequeño Teatro de las Historias Vivas ✨</div>
-  <div class="app-subtitle">Dibuja una figura en el aire. La IA compone una partitura original y narra tu aventura mientras el teatro cobra vida.</div>
+  <div class="app-subtitle">Dibuja en el aire o controla el escenario físico mediante interfaces multimodales.</div>
   <div>
     <label for="drawer-toggle" class="drawer-inline-btn">
       <span>📖</span>
@@ -498,301 +516,396 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-with st.expander("⚙️ Ajustes del Narrador & Conexión", expanded=not bool(st.session_state.api_key)):
-    cfg_col1, cfg_col2, cfg_col3 = st.columns([1.2, 1, 1])
-    with cfg_col1:
-        key_input = st.text_input("OpenAI API Key:", value=st.session_state.api_key, type="password", placeholder="sk-...")
-        if key_input != st.session_state.api_key:
-            st.session_state.api_key = key_input.strip()
-            st.rerun()
-    with cfg_col2:
-        voice_opt = st.selectbox(
-            "Voz del Narrador (HD):",
-            options=["coral", "fable", "onyx", "nova"],
-            index=["coral", "fable", "onyx", "nova"].index(st.session_state.narrator_voice),
-            format_func=lambda x: {
-                "coral": "Coral (Cálida y Expresiva)",
-                "fable": "Fable (Teatral británica)",
-                "onyx": "Onyx (Profunda y Épica)",
-                "nova": "Nova (Luminosa y Vivaz)"
-            }.get(x, x)
-        )
-        st.session_state.narrator_voice = voice_opt
-    with cfg_col3:
-        model_opt = st.selectbox(
-            "Motor de IA:",
-            options=["gpt-4o-mini", "gpt-4o"],
-            index=0 if st.session_state.ai_model == "gpt-4o-mini" else 1,
-            format_func=lambda x: "Ultrarrápido (gpt-4o-mini ~1.5s)" if "mini" in x else "Alta Definición (gpt-4o)"
-        )
-        st.session_state.ai_model = model_opt
+# THE AMBIENCE / VIEW SWITCHER
+view_mode = st.radio(
+    "Selecciona el Ambiente Interactivo:",
+    options=[
+        "🎭 Ambiente 1: Teatro & Narrativa",
+        "🎛️ Ambiente 2: Consola & Telemetría",
+        "🪟 Vista Dual (Ambos Ambientes a la vez)"
+    ],
+    horizontal=True,
+    index=0
+)
 
-component_path = os.path.join(os.path.dirname(__file__), "canvas_component")
-air_canvas = components.declare_component("air_canvas", path=component_path)
+st.markdown("<br>", unsafe_allow_html=True)
 
-col_draw, col_stage = st.columns([1.0, 1.05], gap="large")
-
-# ---------------------------------------------------------
-# Column 1: Drawing Canvas
-# ---------------------------------------------------------
-with col_draw:
-    current_chapter_num = len(st.session_state.story_chapters) + 1
-    st.markdown(f"##### 🪞 El Espejo de Luz &bull; *Capítulo {current_chapter_num}*")
-    st.caption("Pellizca el índice y el pulgar para pintar con polvo de estrellas.")
-    canvas_output = air_canvas(default=None, key="air_canvas_ui")
-
-# ---------------------------------------------------------
-# Sequential Storytelling & Fast Composition Pipeline
-# ---------------------------------------------------------
-if canvas_output:
-    try:
-        data = json.loads(canvas_output) if isinstance(canvas_output, str) else canvas_output
-        action_id = data.get("id")
-
-        if not st.session_state.api_key:
-            st.error("⚠️ Ingresa tu OpenAI API Key en los ajustes superiores para despertar la historia.")
-        elif action_id and action_id != st.session_state.processed_id:
-            cutout_img = data.get("cutout")
-            vision_raw = data.get("vision", "")
-            base64_data = vision_raw.split(",")[1] if "," in vision_raw else vision_raw
-
-            with st.spinner(f"🎼 Componiendo partitura y tejiendo el Capítulo {current_chapter_num}..."):
-                client = OpenAI(api_key=st.session_state.api_key)
-
-                history_prompt = ""
-                if st.session_state.story_chapters:
-                    history_prompt = "HISTORIA HASTA EL MOMENTO:\n"
-                    for ch in st.session_state.story_chapters:
-                        history_prompt += f"- Capítulo {ch['num']} ({ch['title']}): {ch['text']}\n"
-                else:
-                    history_prompt = "Este es el comienzo de una nueva aventura mágica.\n"
-
-                prompt = f"""
-                Eres simultáneamente el Narrador Dramático y el Maestro Compositor Musical de un Teatro de Marionetas.
-                {history_prompt}
-
-                EL USUARIO ACABA DE DIBUJAR UN NUEVO ELEMENTO EN EL AIRE (mira la imagen adjunta).
-
-                INSTRUCCIONES DE NARRATIVA EMOCIONAL:
-                1. Identifica qué criatura u objeto dibujó el usuario.
-                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 3 oraciones ricas en expresividad). Continuación fluida de los capítulos previos.
-                3. MODULACIÓN VOCAL RICA: Usa signos de puntuación dramática (puntos suspensivos '...' para misterio, exclamaciones '¡!', guiones largos '—' para pausas solemnes, comas fluidas) para que la voz modulada exprese emoción viva, asombro y matices.
-                4. Asigna un título poético (máx. 25 letras).
-
-                INSTRUCCIONES DE COMPOSICIÓN MUSICAL (PARTITURA ORIGINAL):
-                5. Bautiza la pieza musical con un título evocador (ej: "Danza del Viento", "Nana de la Luna", "Marcha de las Estrellas").
-                6. Carácter emocional breve (ej: "Lírico y Soñador", "Misterioso", "Jovial").
-                7. COMPÓN UNA MELODÍA ARMÓNICA Y REAL de 8 a 14 notas musicales.
-                   REGLA OBLIGATORIA DE FRECUENCIAS (Cajita de música cálida, tonos graves y medios, NUNCA chirridos agudos):
-                   - Usa EXCLUSIVAMENTE notas afinadas de la escala pentatónica:
-                     G3: 196 Hz | A3: 220 Hz | B3: 247 Hz | C4: 262 Hz | D4: 294 Hz | E4: 330 Hz | F4: 349 Hz | G4: 392 Hz | A4: 440 Hz | C5: 523 Hz
-                     (Usa 0 para silencios y pausas rítmicas indispensables).
-                   - Duraciones en ms: 180 (ligera), 280 (media), 450 (nota reposada final).
-                   - Concluye la melodía reposando en la tónica (C4: 262 o G3: 196).
-
-                8. Parámetros del escenario mecánico:
-                   - sky_rgb: [R, G, B] color del cielo/arco superior.
-                   - foot_rgb: [R, G, B] color cálido de las candilejas de suelo.
-                   - intensity: brillo de 65 a 90.
-                   - prop: elevación del atrezo (40 para rastreros, 90 para caminantes, 140 para voladores/mágicos).
-
-                Responde ÚNICAMENTE en JSON con esta estructura:
-                {{
-                  "entity": "nombre del elemento",
-                  "title": "Título del Capítulo",
-                  "story_spanish": "Cuento en español con puntuación expresiva...",
-                  "score_title": "Nombre de la Canción",
-                  "score_mood": "Carácter emocional",
-                  "sky_rgb": [90, 40, 220],
-                  "foot_rgb": [255, 170, 50],
-                  "intensity": 85,
-                  "prop": 120,
-                  "melody": [
-                    {{"f": 262, "d": 280}},
-                    {{"f": 330, "d": 280}},
-                    {{"f": 392, "d": 450}},
-                    {{"f": 0, "d": 90}},
-                    {{"f": 440, "d": 260}},
-                    {{"f": 392, "d": 260}},
-                    {{"f": 330, "d": 450}}
-                  ]
-                }}
-                """
-
-                completion = client.chat.completions.create(
-                    model=st.session_state.ai_model,
-                    response_format={"type": "json_object"},
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "Eres un narrador de cuentos teatrales expresivo y compositor musical. Respondes exclusivamente en formato JSON válido."
-                        },
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": prompt},
-                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_data}"}}
-                            ]
-                        }
-                    ]
-                )
-
-                choice = completion.choices[0]
-                message = choice.message
-
-                if getattr(message, "refusal", None):
-                    raise ValueError(f"El modelo no pudo procesar la figura: {message.refusal}")
-
-                raw_content = message.content
-                if not raw_content:
-                    raise ValueError(f"Respuesta vacía del modelo (motivo: {choice.finish_reason}).")
-
-                match = re.search(r"\{.*\}", raw_content, re.DOTALL)
-                clean_json = match.group(0) if match else raw_content.strip()
-                chapter_data = json.loads(clean_json)
-
-                # High-Fidelity Voice Synthesis (tts-1-hd with voice modulation)
-                story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
-                tts = client.audio.speech.create(
-                    model="tts-1-hd",
-                    voice=st.session_state.narrator_voice,
-                    input=story_text
-                )
-                audio_bytes = tts.content
-
-                # Register state
-                st.session_state.processed_id = action_id
-                st.session_state.current_cutout = cutout_img
-                st.session_state.current_audio = audio_bytes
-
-                st.session_state.story_chapters.append({
-                    "num": current_chapter_num,
-                    "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
-                    "score_title": chapter_data.get("score_title", "Melodía Mágica"),
-                    "score_mood": chapter_data.get("score_mood", "Encantador"),
-                    "entity": chapter_data.get("entity", "Creación mágica"),
-                    "text": story_text,
-                    "cutout": cutout_img,
-                    "audio": audio_bytes
-                })
-
-                stage_payload = {
-                    "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
-                    "score_title": chapter_data.get("score_title", "Melodía Mágica"),
-                    "sky_rgb": chapter_data.get("sky_rgb", [90, 40, 220]),
-                    "foot_rgb": chapter_data.get("foot_rgb", [255, 170, 50]),
-                    "intensity": chapter_data.get("intensity", 85),
-                    "prop": chapter_data.get("prop", 120),
-                    "melody": chapter_data.get("melody", [])
-                }
-
-                send_stage_cue(stage_payload)
+# =========================================================================
+# AMBIENTE 1: TEATRO & NARRATIVA GESTUAL
+# =========================================================================
+def render_ambiente_1():
+    with st.expander("⚙️ Ajustes del Narrador & Conexión", expanded=not bool(st.session_state.api_key)):
+        cfg_col1, cfg_col2, cfg_col3 = st.columns([1.2, 1, 1])
+        with cfg_col1:
+            key_input = st.text_input("OpenAI API Key:", value=st.session_state.api_key, type="password", placeholder="sk-...")
+            if key_input != st.session_state.api_key:
+                st.session_state.api_key = key_input.strip()
                 st.rerun()
+        with cfg_col2:
+            voice_opt = st.selectbox(
+                "Voz del Narrador (HD):",
+                options=["coral", "fable", "onyx", "nova"],
+                index=["coral", "fable", "onyx", "nova"].index(st.session_state.narrator_voice),
+                format_func=lambda x: {
+                    "coral": "Coral (Cálida y Expresiva)",
+                    "fable": "Fable (Teatral británica)",
+                    "onyx": "Onyx (Profunda y Épica)",
+                    "nova": "Nova (Luminosa y Vivaz)"
+                }.get(x, x)
+            )
+            st.session_state.narrator_voice = voice_opt
+        with cfg_col3:
+            model_opt = st.selectbox(
+                "Motor de IA:",
+                options=["gpt-4o-mini", "gpt-4o"],
+                index=0 if st.session_state.ai_model == "gpt-4o-mini" else 1,
+                format_func=lambda x: "Ultrarrápido (gpt-4o-mini ~1.5s)" if "mini" in x else "Alta Definición (gpt-4o)"
+            )
+            st.session_state.ai_model = model_opt
 
-    except Exception as err:
-        st.error(f"❌ Error al generar historia: {err}")
+    component_path = os.path.join(os.path.dirname(__file__), "canvas_component")
+    air_canvas = components.declare_component("air_canvas", path=component_path)
 
-# ---------------------------------------------------------
-# Column 2: Stage & Story
-# ---------------------------------------------------------
-with col_stage:
-    col_st_title, col_btns = st.columns([0.55, 0.45])
-    with col_st_title:
-        st.markdown("##### 🎪 El Escenario Mecatrónico en Vivo")
-    with col_btns:
-        btn_c1, btn_c2, btn_c3 = st.columns(3)
-        with btn_c1:
-            if st.button("🔔 Probar", help="Envía una partitura de prueba a Wokwi"):
-                test_cue = {
-                    "title": "Acto de Prueba",
-                    "score_title": "Danza de Prueba",
-                    "sky_rgb": [0, 240, 255],
-                    "foot_rgb": [255, 120, 40],
-                    "intensity": 90,
-                    "prop": 135,
-                    "melody": [
-                        {"f": 262, "d": 260},
-                        {"f": 330, "d": 260},
-                        {"f": 392, "d": 380},
-                        {"f": 0,   "d": 80},
-                        {"f": 523, "d": 450}
-                    ]
-                }
-                send_stage_cue(test_cue)
-        with btn_c2:
-            if st.button("🔄 Sync", help="Fuerza a recargar el simulador Wokwi"):
-                st.session_state.wokwi_session_token = int(time.time())
-                st.rerun()
-        with btn_c3:
-            if st.session_state.story_chapters:
-                if st.button("✨ Reset"):
-                    st.session_state.story_chapters = []
-                    st.session_state.current_cutout = None
-                    st.session_state.current_audio = None
-                    st.session_state.processed_id = None
+    col_draw, col_stage = st.columns([1.0, 1.05], gap="large")
+
+    with col_draw:
+        current_chapter_num = len(st.session_state.story_chapters) + 1
+        st.markdown(f"##### 🪞 El Espejo de Luz &bull; *Capítulo {current_chapter_num}*")
+        st.caption("Pellizca el índice y el pulgar para pintar con polvo de estrellas.")
+        canvas_output = air_canvas(default=None, key="air_canvas_ui")
+
+    if canvas_output:
+        try:
+            data = json.loads(canvas_output) if isinstance(canvas_output, str) else canvas_output
+            action_id = data.get("id")
+
+            if not st.session_state.api_key:
+                st.error("⚠️ Ingresa tu OpenAI API Key en los ajustes superiores para despertar la historia.")
+            elif action_id and action_id != st.session_state.processed_id:
+                cutout_img = data.get("cutout")
+                vision_raw = data.get("vision", "")
+                base64_data = vision_raw.split(",")[1] if "," in vision_raw else vision_raw
+
+                with st.spinner(f"🎼 Componiendo partitura y tejiendo el Capítulo {current_chapter_num}..."):
+                    client = OpenAI(api_key=st.session_state.api_key)
+
+                    history_prompt = ""
+                    if st.session_state.story_chapters:
+                        history_prompt = "HISTORIA HASTA EL MOMENTO:\n"
+                        for ch in st.session_state.story_chapters:
+                            history_prompt += f"- Capítulo {ch['num']} ({ch['title']}): {ch['text']}\n"
+                    else:
+                        history_prompt = "Este es el comienzo de una nueva aventura mágica.\n"
+
+                    prompt = f"""
+                    Eres simultáneamente el Narrador Dramático y el Maestro Compositor Musical de un Teatro de Marionetas.
+                    {history_prompt}
+
+                    EL USUARIO ACABA DE DIBUJAR UN NUEVO ELEMENTO EN EL AIRE (mira la imagen adjunta).
+
+                    INSTRUCCIONES DE NARRATIVA EMOCIONAL:
+                    1. Identifica qué criatura u objeto dibujó el usuario.
+                    2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 3 oraciones ricas en expresividad). Continuación fluida de los capítulos previos.
+                    3. MODULACIÓN VOCAL RICA: Usa signos de puntuación dramática (puntos suspensivos '...' para misterio, exclamaciones '¡!', guiones largos '—' para pausas solemnes, comas fluidas) para que la voz modulada exprese emoción viva, asombro y matices.
+                    4. Asigna un título poético (máx. 25 letras).
+
+                    INSTRUCCIONES DE COMPOSICIÓN MUSICAL (PARTITURA ORIGINAL):
+                    5. Bautiza la pieza musical con un título evocador (ej: "Danza del Viento", "Nana de la Luna", "Marcha de las Estrellas").
+                    6. Carácter emocional breve (ej: "Lírico y Soñador", "Misterioso", "Jovial").
+                    7. COMPÓN UNA MELODÍA ARMÓNICA Y REAL de 8 a 14 notas musicales.
+                       REGLA OBLIGATORIA DE FRECUENCIAS (Cajita de música cálida, tonos graves y medios, NUNCA chirridos agudos):
+                       - Usa EXCLUSIVAMENTE notas afinadas de la escala pentatónica:
+                         G3: 196 Hz | A3: 220 Hz | B3: 247 Hz | C4: 262 Hz | D4: 294 Hz | E4: 330 Hz | F4: 349 Hz | G4: 392 Hz | A4: 440 Hz | C5: 523 Hz
+                         (Usa 0 para silencios y pausas rítmicas indispensables).
+                       - Duraciones en ms: 180 (ligera), 280 (media), 450 (nota reposada final).
+                       - Concluye la melodía reposando en la tónica (C4: 262 o G3: 196).
+
+                    8. Parámetros del escenario mecánico:
+                       - sky_rgb: [R, G, B] color del cielo/arco superior.
+                       - foot_rgb: [R, G, B] color cálido de las candilejas de suelo.
+                       - intensity: brillo de 65 a 90.
+                       - prop: elevación del atrezo (40 para rastreros, 90 para caminantes, 140 para voladores/mágicos).
+
+                    Responde ÚNICAMENTE en JSON con esta estructura:
+                    {{
+                      "entity": "nombre del elemento",
+                      "title": "Título del Capítulo",
+                      "story_spanish": "Cuento en español con puntuación expresiva...",
+                      "score_title": "Nombre de la Canción",
+                      "score_mood": "Carácter emocional",
+                      "sky_rgb": [90, 40, 220],
+                      "foot_rgb": [255, 170, 50],
+                      "intensity": 85,
+                      "prop": 120,
+                      "melody": [
+                        {{"f": 262, "d": 280}},
+                        {{"f": 330, "d": 280}},
+                        {{"f": 392, "d": 450}},
+                        {{"f": 0, "d": 90}},
+                        {{"f": 440, "d": 260}},
+                        {{"f": 392, "d": 260}},
+                        {{"f": 330, "d": 450}}
+                      ]
+                    }}
+                    """
+
+                    completion = client.chat.completions.create(
+                        model=st.session_state.ai_model,
+                        response_format={"type": "json_object"},
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": "Eres un narrador de cuentos teatrales expresivo y compositor musical. Respondes exclusivamente en formato JSON válido."
+                            },
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": prompt},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_data}"}}
+                                ]
+                            }
+                        ]
+                    )
+
+                    choice = completion.choices[0]
+                    message = choice.message
+
+                    if getattr(message, "refusal", None):
+                        raise ValueError(f"El modelo no pudo procesar la figura: {message.refusal}")
+
+                    raw_content = message.content
+                    if not raw_content:
+                        raise ValueError(f"Respuesta vacía del modelo (motivo: {choice.finish_reason}).")
+
+                    match = re.search(r"\{.*\}", raw_content, re.DOTALL)
+                    clean_json = match.group(0) if match else raw_content.strip()
+                    chapter_data = json.loads(clean_json)
+
+                    # High-Fidelity Voice Synthesis
+                    story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
+                    tts = client.audio.speech.create(
+                        model="tts-1-hd",
+                        voice=st.session_state.narrator_voice,
+                        input=story_text
+                    )
+                    audio_bytes = tts.content
+
+                    st.session_state.processed_id = action_id
+                    st.session_state.current_cutout = cutout_img
+                    st.session_state.current_audio = audio_bytes
+
+                    st.session_state.story_chapters.append({
+                        "num": current_chapter_num,
+                        "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
+                        "score_title": chapter_data.get("score_title", "Melodía Mágica"),
+                        "score_mood": chapter_data.get("score_mood", "Encantador"),
+                        "entity": chapter_data.get("entity", "Creación mágica"),
+                        "text": story_text,
+                        "cutout": cutout_img,
+                        "audio": audio_bytes
+                    })
+
+                    stage_payload = {
+                        "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
+                        "score_title": chapter_data.get("score_title", "Melodía Mágica"),
+                        "sky_rgb": chapter_data.get("sky_rgb", [90, 40, 220]),
+                        "foot_rgb": chapter_data.get("foot_rgb", [255, 170, 50]),
+                        "intensity": chapter_data.get("intensity", 85),
+                        "prop": chapter_data.get("prop", 120),
+                        "melody": chapter_data.get("melody", [])
+                    }
+
+                    send_stage_cue(stage_payload)
                     st.rerun()
 
-    st.caption("💡 *Asegúrate de pulsar el botón verde ▶️ (Play) dentro de Wokwi para encender el escenario.*")
+        except Exception as err:
+            st.error(f"❌ Error al generar historia: {err}")
 
-    # The Persistent Wokwi Stage
-    st.markdown('<div class="stage-box" id="target-stage-box">', unsafe_allow_html=True)
-    components.iframe(
-        f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram&v={st.session_state.wokwi_session_token}",
-        height=350
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+    with col_stage:
+        col_st_title, col_btns = st.columns([0.55, 0.45])
+        with col_st_title:
+            st.markdown("##### 🎪 El Escenario Mecatrónico en Vivo")
+        with col_btns:
+            btn_c1, btn_c2, btn_c3 = st.columns(3)
+            with btn_c1:
+                if st.button("🔔 Probar", help="Envía una partitura de prueba a Wokwi"):
+                    test_cue = {
+                        "title": "Acto de Prueba",
+                        "score_title": "Danza de Prueba",
+                        "sky_rgb": [0, 240, 255],
+                        "foot_rgb": [255, 120, 40],
+                        "intensity": 90,
+                        "prop": 135,
+                        "melody": [
+                            {"f": 262, "d": 260},
+                            {"f": 330, "d": 260},
+                            {"f": 392, "d": 380},
+                            {"f": 0,   "d": 80},
+                            {"f": 523, "d": 450}
+                        ]
+                    }
+                    send_stage_cue(test_cue)
+            with btn_c2:
+                if st.button("🔄 Sync", help="Fuerza a recargar el simulador Wokwi"):
+                    st.session_state.wokwi_session_token = int(time.time())
+                    st.rerun()
+            with btn_c3:
+                if st.session_state.story_chapters:
+                    if st.button("✨ Reset"):
+                        st.session_state.story_chapters = []
+                        st.session_state.current_cutout = None
+                        st.session_state.current_audio = None
+                        st.session_state.processed_id = None
+                        st.rerun()
 
-    # Floating Character Layer over Wokwi Stage
-    if st.session_state.current_cutout:
+        st.caption("💡 *Asegúrate de pulsar el botón verde ▶️ (Play) dentro de Wokwi para encender el escenario.*")
+
+        # The Persistent Wokwi Stage
+        st.markdown('<div class="stage-box" id="target-stage-box">', unsafe_allow_html=True)
+        components.iframe(
+            f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram&v={st.session_state.wokwi_session_token}",
+            height=350
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Floating Character Layer over Wokwi Stage
+        if st.session_state.current_cutout:
+            st.markdown(f"""
+            <div class="hologram-overlay-container">
+                <img src="{st.session_state.current_cutout}" class="stage-cutout" />
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Active Chapter Story Card
+        if st.session_state.story_chapters:
+            latest = st.session_state.story_chapters[-1]
+            st.markdown(f"""
+            <div class="story-card" id="target-story-box">
+              <div>
+                <span class="chapter-badge">Capítulo {latest['num']} &bull; {latest['entity']}</span>
+                <span class="music-badge">🎼 {latest.get('score_title', 'Partitura')} ({latest.get('score_mood', 'Mágico')})</span>
+              </div>
+              <div class="story-heading">{latest['title']}</div>
+              <div class="story-body">{latest['text']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if st.session_state.current_audio:
+                st.audio(st.session_state.current_audio, format="audio/mp3", autoplay=True)
+        else:
+            st.markdown("""
+            <div class="story-card" id="target-story-box" style="text-align: center; padding: 24px;">
+              <div style="font-size: 2rem; margin-bottom: 6px;">✨📜</div>
+              <div style="color: #cbd5e1; font-weight: 500;">El teatro está en penumbra esperando la función</div>
+              <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Dibuja la primera criatura o paisaje para abrir el telón y escuchar su música original.</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    if len(st.session_state.story_chapters) > 1:
+        st.markdown("---")
+        st.markdown("### 📖 Crónica del Cuento Completo")
+        ch_cols = st.columns(min(len(st.session_state.story_chapters), 5))
+        for idx, ch in enumerate(st.session_state.story_chapters):
+            col_idx = idx % 5
+            with ch_cols[col_idx]:
+                st.markdown(f"**Cap. {ch['num']}: {ch['title']}**")
+                st.caption(f"🎼 *{ch.get('score_title', 'Canción')}*")
+                if ch.get("cutout"):
+                    st.image(ch["cutout"], width=90)
+                st.caption(ch["text"])
+
+# =========================================================================
+# AMBIENTE 2: CONSOLA DE DIRECCIÓN & TELEMETRÍA (WOKWI -> STREAMLIT)
+# =========================================================================
+def render_ambiente_2():
+    st.markdown("### 🎛️ Consola de Dirección y Telemetría Ciberfísica")
+    st.caption("Ambiente de control técnico manual, calibración de actuadores y monitor de telemetría bidireccional.")
+
+    col_ctrl, col_mon = st.columns([1, 1], gap="large")
+
+    with col_ctrl:
+        st.subheader("1. Mandos Manuales del Escenario")
+        st.caption("Controla manualmente los servomotores y luces del circuito Wokwi:")
+
+        tab_servos, tab_luces = st.tabs(["🦾 Calibración Servomotores", "💡 Iluminación Escénica"])
+
+        with tab_servos:
+            c1, c2 = st.columns(2)
+            with c1:
+                telon_izq = st.slider("Telón Izquierdo (Pin 13)", 0, 90, 0, help="0° cerrado, 90° abierto")
+                elevador = st.slider("Elevador de Atrezo (Pin 14)", 20, 150, 20, help="20° reposo, 140° escena")
+            with c2:
+                telon_der = st.slider("Telón Derecho (Pin 25)", 90, 180, 180, help="180° cerrado, 90° abierto")
+                viento = st.slider("Máquina de Viento (Pin 27)", 70, 110, 90, help="90° neutro")
+
+        with tab_luces:
+            c_sky = st.color_picker("Color Arco Proscenio (Cielo)", "#5A28DC")
+            c_foot = st.color_picker("Color Candilejas (Piso)", "#FFA032")
+            brillo = st.slider("Intensidad Luminosa (%)", 10, 100, 85)
+
+        if st.button("📡 Enviar Comandos Manuales a Wokwi", type="primary"):
+            h_sky = c_sky.lstrip("#")
+            rgb_sky = [int(h_sky[i:i+2], 16) for i in (0, 2, 4)]
+            h_foot = c_foot.lstrip("#")
+            rgb_foot = [int(h_foot[i:i+2], 16) for i in (0, 2, 4)]
+
+            payload = {
+                "title": "Mando Manual",
+                "score_title": "Intervencion Manual",
+                "sky_rgb": rgb_sky,
+                "foot_rgb": rgb_foot,
+                "intensity": brillo,
+                "prop": elevador,
+                "melody": [{"f": 262, "d": 200}, {"f": 330, "d": 200}, {"f": 392, "d": 350}]
+            }
+            send_stage_cue(payload)
+
+    with col_mon:
+        st.subheader("2. Telemetría de Retorno en Vivo (Wokwi ➔ Streamlit)")
+        st.caption("Verificación del canal de comunicación bidireccional MQTT:")
+
+        # Live telemetry box from Wokwi
+        t_data = st.session_state.latest_telemetry
         st.markdown(f"""
-        <div class="hologram-overlay-container">
-            <img src="{st.session_state.current_cutout}" class="stage-cutout" />
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Active Chapter Story Card
-    if st.session_state.story_chapters:
-        latest = st.session_state.story_chapters[-1]
-        st.markdown(f"""
-        <div class="story-card" id="target-story-box">
-          <div>
-            <span class="chapter-badge">Capítulo {latest['num']} &bull; {latest['entity']}</span>
-            <span class="music-badge">🎼 {latest.get('score_title', 'Partitura')} ({latest.get('score_mood', 'Mágico')})</span>
+        <div style="background: rgba(18, 14, 40, 0.8); border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 16px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+            <span style="font-weight:700; color:#38bdf8;">📡 DISPOSITIVO: {t_data.get('origen')}</span>
+            <span style="color:#94a3b8; font-size:0.85rem;">Hora: {t_data.get('hora')}</span>
           </div>
-          <div class="story-heading">{latest['title']}</div>
-          <div class="story-body">{latest['text']}</div>
+          <div style="font-size:0.95rem; line-height:1.7;">
+            &bull; <b>Estado Escénico:</b> <code style="color:#c084fc;">{t_data.get('estado')}</code><br>
+            &bull; <b>Posición de Telones:</b> <code style="color:#fde047;">{t_data.get('telon')}</code><br>
+            &bull; <b>Último Acto Interpretado:</b> <i>{t_data.get('ultimo_acto')}</i><br>
+            &bull; <b>Tiempo Activo ESP32:</b> {t_data.get('uptime_seg')} segundos
+          </div>
         </div>
         """, unsafe_allow_html=True)
 
-        if st.session_state.current_audio:
-            st.audio(st.session_state.current_audio, format="audio/mp3", autoplay=True)
-    else:
+        if st.button("🔄 Refrescar Monitor de Telemetría"):
+            st.rerun()
+
         st.markdown("""
-        <div class="story-card" id="target-story-box" style="text-align: center; padding: 24px;">
-          <div style="font-size: 2rem; margin-bottom: 6px;">✨📜</div>
-          <div style="color: #cbd5e1; font-weight: 500;">El teatro está en penumbra esperando la función</div>
-          <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Dibuja la primera criatura o paisaje para abrir el telón y escuchar su música original.</div>
-        </div>
-        """, unsafe_allow_html=True)
+        ---
+        ##### Canal Bidireccional
+        * **Streamlit $\\rightarrow$ Wokwi:** `air_draw_story/stage_cue`
+        * **Wokwi $\\rightarrow$ Streamlit:** `air_draw_story/telemetry`
+        """)
 
-# ---------------------------------------------------------
-# Full Illustrated Chronicle Log
-# ---------------------------------------------------------
-if len(st.session_state.story_chapters) > 1:
+# =========================================================================
+# ROUTING CONTROLLER
+# =========================================================================
+if "Ambiente 1" in view_mode:
+    render_ambiente_1()
+elif "Ambiente 2" in view_mode:
+    render_ambiente_2()
+else:
+    # VISTA DUAL: AMBOS AMBIENTES A LA VEZ
+    render_ambiente_1()
     st.markdown("---")
-    st.markdown("### 📖 Crónica del Cuento Completo")
-    ch_cols = st.columns(min(len(st.session_state.story_chapters), 5))
-    for idx, ch in enumerate(st.session_state.story_chapters):
-        col_idx = idx % 5
-        with ch_cols[col_idx]:
-            st.markdown(f"**Cap. {ch['num']}: {ch['title']}**")
-            st.caption(f"🎼 *{ch.get('score_title', 'Canción')}*")
-            if ch.get("cutout"):
-                st.image(ch["cutout"], width=90)
-            st.caption(ch["text"])
+    render_ambiente_2()
 
 # ---------------------------------------------------------
-# Stardust Particle Trail & Full-Box Spotlight Bridge
+# Companion Particle Trail Bridge
 # ---------------------------------------------------------
 components.html("""
 <script>
@@ -962,12 +1075,18 @@ components.html("""
                     currentTarget = targetEl;
                     currentColor = color;
 
+                    targetEl.style.setProperty('--highlight-color', color);
+                    targetEl.classList.add('companion-target-highlight');
+
                     startAnimation();
                 }
             });
 
             link.addEventListener('mouseleave', function() {
                 isHovering = false;
+                if (currentTarget) {
+                    currentTarget.classList.remove('companion-target-highlight');
+                }
                 currentTarget = null;
                 currentSource = null;
             });
