@@ -149,7 +149,6 @@ WOKWI_PROJECT_ID = "479816492813091841"
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_TOPIC = "air_draw_story/stage_cue"
 
-# Non-blocking MQTT dispatcher (Never freezes Streamlit UI)
 def dispatch_mqtt_async(payload_dict):
     def _worker():
         try:
@@ -161,7 +160,7 @@ def dispatch_mqtt_async(payload_dict):
                 keepalive=5
             )
         except Exception as e:
-            print(f"[MQTT Async Notice]: {e}")
+            print(f"[MQTT Notice]: {e}")
     threading.Thread(target=_worker, daemon=True).start()
 
 if "wokwi_session_token" not in st.session_state:
@@ -177,7 +176,7 @@ if "current_audio" not in st.session_state:
 if "current_cutout" not in st.session_state:
     st.session_state.current_cutout = None
 
-# Top Header
+# Top Title
 st.markdown("""
 <div class="header-glow">
   <div class="app-title">🎭 El Pequeño Teatro de las Historias Vivas ✨</div>
@@ -185,11 +184,11 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# API Key fallback input if secrets is empty
+# API Key Bar (shows only if empty)
 if not st.session_state.api_key:
-    temp_key = st.text_input("Ingresa tu OpenAI API Key para activar la escena:", type="password", placeholder="sk-...")
-    if temp_key:
-        st.session_state.api_key = temp_key.strip()
+    key_input = st.text_input("🔑 OpenAI API Key Requerida:", type="password", placeholder="sk-...")
+    if key_input:
+        st.session_state.api_key = key_input.strip()
         st.rerun()
 
 component_path = os.path.join(os.path.dirname(__file__), "canvas_component")
@@ -212,13 +211,13 @@ if canvas_output:
         action_id = data.get("id")
 
         if not st.session_state.api_key:
-            st.error("⚠️ Se requiere una OpenAI API Key para crear la historia.")
+            st.error("⚠️ Falta la OpenAI API Key. Ingrésala arriba para continuar.")
         elif action_id and action_id != st.session_state.processed_id:
             cutout_img = data.get("cutout")
             vision_raw = data.get("vision", "")
             base64_data = vision_raw.split(",")[1] if "," in vision_raw else vision_raw
 
-            with st.spinner(f"✨ Abriendo telones para el Capítulo {current_chapter_num}..."):
+            with st.spinner(f"✨ Creando el Capítulo {current_chapter_num} y componiendo la melodía..."):
                 client = OpenAI(api_key=st.session_state.api_key)
 
                 history_prompt = ""
@@ -230,37 +229,43 @@ if canvas_output:
                     history_prompt = "Este es el comienzo de una nueva aventura mágica.\n"
 
                 prompt = f"""
-                Eres el Director Artístico y Narrador de un Teatro Mecánico de Marionetas para niños y soñadores.
+                Eres el Director Artístico y Compositor Musical de un Teatro de Marionetas para niños.
                 {history_prompt}
 
                 EL USUARIO ACABA DE DIBUJAR UN NUEVO ELEMENTO EN EL AIRE (mira la imagen adjunta).
 
                 INSTRUCCIONES:
-                1. Identifica qué criatura, objeto o símbolo dibujó.
-                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 4 oraciones).
-                   Continuación directa de los capítulos anteriores.
-                3. Asigna un título poético al capítulo (máx. 25 caracteres).
-                4. Control del Escenario Mecánico:
-                   - sky_rgb: [R, G, B] color del arco proscenio superior.
-                   - foot_rgb: [R, G, B] color cálido de las candilejas de piso.
-                   - intensity: Brillo de 50 a 100%.
-                   - prop: Altura del elevador mecánico (40 a 150).
-                5. Melodía escénica: 10 a 14 notas musicales en Hz [260 a 950] y ms [120 a 300].
+                1. Identifica qué criatura u objeto dibujó.
+                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 3 oraciones). Continuación directa y natural de los capítulos anteriores.
+                3. Asigna un título poético al capítulo (máx. 25 letras).
+                4. Colores y elevador para el escenario:
+                   - sky_rgb: [R, G, B] color del cielo/arco superior.
+                   - foot_rgb: [R, G, B] color de las candilejas de suelo.
+                   - intensity: brillo de 60 a 95.
+                   - prop: altura del atrezo (40 para rastreros, 90 para caminantes, 140 para voladores).
+                5. COMPOSICIÓN MUSICAL REAL (Cajita de música mágica):
+                   Compón un motivo musical armónico, dulce y reconocible de 8 a 12 notas.
+                   REGLA ESTRICTA DE ARMONÍA: Usa únicamente frecuencias estándar de la escala pentatónica para que suene como una melodía real y nunca como ruido:
+                   C4=262, D4=294, E4=330, G4=392, A4=440, C5=523, D5=587, E5=659, G5=784 Hz (y 0 para silencio/pausa).
+                   Duraciones en ms: 150 (rápida), 250 (media), 400 (larga).
 
                 Responde ÚNICAMENTE en JSON con esta estructura:
                 {{
-                  "entity": "nombre del nuevo elemento",
+                  "entity": "nombre del elemento",
                   "title": "Título del Capítulo",
-                  "story_spanish": "Continuación de la historia...",
+                  "story_spanish": "Continuación del cuento...",
                   "sky_rgb": [90, 40, 220],
                   "foot_rgb": [255, 170, 50],
                   "intensity": 85,
-                  "prop": 130,
+                  "prop": 120,
                   "melody": [
-                    {{"f": 392, "d": 150}},
-                    {{"f": 523, "d": 180}},
-                    {{"f": 659, "d": 200}},
-                    {{"f": 784, "d": 320}}
+                    {{"f": 392, "d": 250}},
+                    {{"f": 440, "d": 250}},
+                    {{"f": 523, "d": 400}},
+                    {{"f": 659, "d": 250}},
+                    {{"f": 0, "d": 60}},
+                    {{"f": 587, "d": 250}},
+                    {{"f": 523, "d": 400}}
                   ]
                 }}
                 """
@@ -282,7 +287,7 @@ if canvas_output:
                     raw_json = raw_json.strip("`").replace("json\n", "", 1)
                 chapter_data = json.loads(raw_json)
 
-                # Narration Audio Synthesis
+                # Voice narration
                 tts = client.audio.speech.create(
                     model="tts-1",
                     voice="nova",
@@ -290,12 +295,11 @@ if canvas_output:
                 )
                 audio_bytes = tts.content
 
-                # Mark processed only on full success
+                # Register state
                 st.session_state.processed_id = action_id
                 st.session_state.current_cutout = cutout_img
                 st.session_state.current_audio = audio_bytes
 
-                # Save chapter
                 st.session_state.story_chapters.append({
                     "num": current_chapter_num,
                     "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
@@ -305,21 +309,20 @@ if canvas_output:
                     "audio": audio_bytes
                 })
 
-                # Hardware payload for Wokwi
                 stage_payload = {
                     "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
                     "sky_rgb": chapter_data.get("sky_rgb", [90, 40, 220]),
                     "foot_rgb": chapter_data.get("foot_rgb", [255, 170, 50]),
                     "intensity": chapter_data.get("intensity", 85),
-                    "prop": chapter_data.get("prop", 130),
+                    "prop": chapter_data.get("prop", 120),
                     "melody": chapter_data.get("melody", [])
                 }
 
-                # Dispatched in background thread: NEVER hangs or freezes Streamlit
                 dispatch_mqtt_async(stage_payload)
+                st.rerun()
 
     except Exception as err:
-        st.error(f"❌ Error al generar: {err}")
+        st.error(f"❌ Error al generar historia: {err}")
 
 with col_stage:
     col_st_title, col_btns = st.columns([0.65, 0.35])
