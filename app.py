@@ -84,11 +84,16 @@ slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2:
 slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en vivo — Música en zumbador, OLED activa y luces encendidas (1.png)")
 
 # ---------------------------------------------------------
-# Luminous Theme & PURE CSS Companion Highlighting
+# Luminous Theme & Full-Box CSS Highlighting + Smooth Scroll
 # ---------------------------------------------------------
 magical_theme = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&display=swap');
+
+/* Smooth Scrolling across entire application */
+html, body, [data-testid="stAppViewContainer"], .main, .drawer-content {{
+    scroll-behavior: smooth !important;
+}}
 
 header[data-testid="stHeader"] {{
     background: transparent !important;
@@ -147,156 +152,137 @@ html, body, [data-testid="stAppViewContainer"] {{
     margin-top: 2px;
 }}
 
-/* ------------------------------------------------------------- */
-/* PURE CSS COMPANION HIGHLIGHTING & FLOATING BEACONS            */
-/* ------------------------------------------------------------- */
-#target-canvas-box, #target-stage-box, #target-story-box, #target-telemetry-box {{
+/* Base Styling for Real Full-Height Containers */
+div:has(> iframe[title*="air_canvas"]),
+[data-testid="element-container"]:has(iframe[title*="air_canvas"]) {{
+    position: relative !important;
+    border-radius: 16px !important;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }}
 
-/* Target Glow Animations */
-@keyframes targetNeonPulse {{
-    0%, 100% {{
-        filter: drop-shadow(0 0 18px var(--beacon-glow, #38bdf8));
-    }}
-    50% {{
-        filter: drop-shadow(0 0 35px var(--beacon-glow, #38bdf8)) drop-shadow(0 0 60px rgba(192, 132, 252, 0.5));
-    }}
+div:has(> iframe[src*="wokwi.com"]),
+[data-testid="element-container"]:has(iframe[src*="wokwi.com"]) {{
+    position: relative !important;
+    border-radius: 16px !important;
+    background: #0d0a1f !important;
+    border: 1px solid rgba(192, 132, 252, 0.35) !important;
+    box-shadow: 0 0 30px rgba(112, 0, 255, 0.2) !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }}
 
-/* 1. Canvas Highlighter */
-body:has(.hl-canvas:hover) #target-canvas-box {{
-    --beacon-glow: #38bdf8;
-    outline: 3.5px solid #38bdf8 !important;
-    box-shadow: 0 0 45px rgba(56, 189, 248, 0.85), 0 0 80px rgba(192, 132, 252, 0.4) !important;
+/* ------------------------------------------------------------- */
+/* PURE CSS FULL-BOX HIGHLIGHTING (NO 0px THIN BARS)             */
+/* ------------------------------------------------------------- */
+
+/* 1. Full Canvas Highlighting */
+body:has(.hl-canvas:hover) div:has(> iframe[title*="air_canvas"]),
+body:has(.hl-canvas:hover) [data-testid="element-container"]:has(iframe[title*="air_canvas"]) {{
+    outline: 4px solid #38bdf8 !important;
+    box-shadow: 0 0 50px rgba(56, 189, 248, 0.85), 0 0 90px rgba(192, 132, 252, 0.5) !important;
     transform: scale(1.012) !important;
-    border-radius: 16px !important;
-    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
     z-index: 50 !important;
 }}
-body:has(.hl-canvas:hover) #target-canvas-box::after {{
-    content: "🪞 Lienzo Gestual (MediaPipe 60 FPS) Enfocado";
+body:has(.hl-canvas:hover) div:has(> iframe[title*="air_canvas"])::before {{
+    content: "🪞 Lienzo Gestual (MediaPipe) Enfocado";
     position: absolute;
-    top: 14px;
-    left: 14px;
+    top: 12px;
+    left: 12px;
     background: rgba(56, 189, 248, 0.95);
     color: #031c26;
-    padding: 5px 14px;
+    padding: 4px 14px;
     border-radius: 20px;
     font-size: 0.76rem;
     font-weight: 700;
-    z-index: 100;
+    z-index: 1000;
     box-shadow: 0 0 20px #38bdf8;
+    pointer-events: none;
 }}
 
-/* 2. Curtains Highlighter */
-body:has(.hl-curtains:hover) #target-stage-box {{
-    --beacon-glow: #f43f5e;
-    outline: 3.5px solid #f43f5e !important;
-    box-shadow: 0 0 50px rgba(244, 63, 94, 0.85), 0 0 80px rgba(244, 63, 94, 0.4) !important;
+/* 2. Full Stage - Curtains Highlighting */
+body:has(.hl-curtains:hover) div:has(> iframe[src*="wokwi.com"]),
+body:has(.hl-curtains:hover) [data-testid="element-container"]:has(iframe[src*="wokwi.com"]) {{
+    outline: 4px solid #f43f5e !important;
+    box-shadow: 0 0 55px rgba(244, 63, 94, 0.9), 0 0 90px rgba(244, 63, 94, 0.5) !important;
     transform: scale(1.012) !important;
-    border-radius: 16px !important;
-    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
     z-index: 50 !important;
 }}
-body:has(.hl-curtains:hover) #target-stage-box::after {{
+body:has(.hl-curtains:hover) div:has(> iframe[src*="wokwi.com"])::before {{
     content: "🎭 Telones Izq (13) & Der (25) Enfocados";
     position: absolute;
-    top: 14px;
-    left: 14px;
+    top: 12px;
+    left: 12px;
     background: rgba(244, 63, 94, 0.95);
     color: #ffffff;
-    padding: 5px 14px;
+    padding: 4px 14px;
     border-radius: 20px;
     font-size: 0.76rem;
     font-weight: 700;
-    z-index: 100;
+    z-index: 1000;
     box-shadow: 0 0 20px #f43f5e;
+    pointer-events: none;
 }}
 
-/* 3. Prop Lift Highlighter */
-body:has(.hl-prop:hover) #target-stage-box {{
-    --beacon-glow: #fbbf24;
-    outline: 3.5px solid #fbbf24 !important;
-    box-shadow: 0 0 50px rgba(251, 191, 36, 0.85), 0 0 80px rgba(251, 191, 36, 0.4) !important;
+/* 3. Full Stage - Prop Elevator Highlighting */
+body:has(.hl-prop:hover) div:has(> iframe[src*="wokwi.com"]),
+body:has(.hl-prop:hover) [data-testid="element-container"]:has(iframe[src*="wokwi.com"]) {{
+    outline: 4px solid #fbbf24 !important;
+    box-shadow: 0 0 55px rgba(251, 191, 36, 0.9), 0 0 90px rgba(251, 191, 36, 0.5) !important;
     transform: scale(1.012) !important;
-    border-radius: 16px !important;
-    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
     z-index: 50 !important;
 }}
-body:has(.hl-prop:hover) #target-stage-box::after {{
+body:has(.hl-prop:hover) div:has(> iframe[src*="wokwi.com"])::before {{
     content: "🚀 Elevador de Atrezo (Pin 14) Enfocado";
     position: absolute;
-    top: 14px;
-    left: 14px;
+    top: 12px;
+    left: 12px;
     background: rgba(251, 191, 36, 0.95);
     color: #171100;
-    padding: 5px 14px;
+    padding: 4px 14px;
     border-radius: 20px;
     font-size: 0.76rem;
     font-weight: 700;
-    z-index: 100;
+    z-index: 1000;
     box-shadow: 0 0 20px #fbbf24;
+    pointer-events: none;
 }}
 
-/* 4. Wind Machine Highlighter */
-body:has(.hl-wind:hover) #target-stage-box {{
-    --beacon-glow: #38bdf8;
-    outline: 3.5px solid #38bdf8 !important;
-    box-shadow: 0 0 50px rgba(56, 189, 248, 0.85), 0 0 80px rgba(56, 189, 248, 0.4) !important;
+/* 4. Full Stage - Wind Machine Highlighting */
+body:has(.hl-wind:hover) div:has(> iframe[src*="wokwi.com"]),
+body:has(.hl-wind:hover) [data-testid="element-container"]:has(iframe[src*="wokwi.com"]) {{
+    outline: 4px solid #38bdf8 !important;
+    box-shadow: 0 0 55px rgba(56, 189, 248, 0.85), 0 0 90px rgba(56, 189, 248, 0.5) !important;
     transform: scale(1.012) !important;
-    border-radius: 16px !important;
-    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
     z-index: 50 !important;
 }}
-body:has(.hl-wind:hover) #target-stage-box::after {{
+body:has(.hl-wind:hover) div:has(> iframe[src*="wokwi.com"])::before {{
     content: "🌪️ Máquina de Viento (Pin 27) Enfocada";
     position: absolute;
-    top: 14px;
-    left: 14px;
+    top: 12px;
+    left: 12px;
     background: rgba(56, 189, 248, 0.95);
     color: #031c26;
-    padding: 5px 14px;
+    padding: 4px 14px;
     border-radius: 20px;
     font-size: 0.76rem;
     font-weight: 700;
-    z-index: 100;
+    z-index: 1000;
     box-shadow: 0 0 20px #38bdf8;
+    pointer-events: none;
 }}
 
-/* 5. Story Card Highlighter */
-body:has(.hl-story:hover) #target-story-box {{
-    --beacon-glow: #c084fc;
-    outline: 3.5px solid #c084fc !important;
-    box-shadow: 0 0 50px rgba(192, 132, 252, 0.9), 0 0 80px rgba(192, 132, 252, 0.4) !important;
+/* 5. Full Story Card Highlighting */
+body:has(.hl-story:hover) .story-card {{
+    outline: 4px solid #c084fc !important;
+    box-shadow: 0 0 50px rgba(192, 132, 252, 0.9), 0 0 90px rgba(192, 132, 252, 0.5) !important;
     transform: scale(1.012) !important;
-    border-radius: 16px !important;
-    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
     z-index: 50 !important;
 }}
-body:has(.hl-story:hover) #target-story-box::after {{
-    content: "🔮 Narrativa & Voz HD (tts-1-hd) Enfocada";
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    background: rgba(192, 132, 252, 0.95);
-    color: #17042a;
-    padding: 5px 14px;
-    border-radius: 20px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    z-index: 100;
-    box-shadow: 0 0 20px #c084fc;
-}}
 
-/* 6. Telemetry Monitor Highlighter */
+/* 6. Telemetry Monitor Highlighting */
 body:has(.hl-telemetry:hover) #target-telemetry-box {{
-    --beacon-glow: #38bdf8;
-    outline: 3.5px solid #38bdf8 !important;
+    outline: 4px solid #38bdf8 !important;
     box-shadow: 0 0 50px rgba(56, 189, 248, 0.85) !important;
     transform: scale(1.012) !important;
-    border-radius: 12px !important;
-    animation: targetNeonPulse 1.8s infinite ease-in-out !important;
     z-index: 50 !important;
 }}
 
@@ -347,16 +333,7 @@ body:has(.hl-telemetry:hover) #target-telemetry-box {{
     margin-top: 6px;
 }}
 
-/* Stage Box */
-.stage-box {{
-    position: relative;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid rgba(192, 132, 252, 0.35);
-    box-shadow: 0 0 30px rgba(112, 0, 255, 0.2);
-    background: #0d0a1f;
-    transition: all 0.3s ease;
-}}
+/* Floating Hologram Layer */
 .hologram-overlay-container {{
     position: relative;
     height: 0px;
@@ -590,6 +567,7 @@ div.stButton > button {{
     font-style: italic;
 }}
 </style>
+
 <div class="stars-overlay"></div>
 <input type="checkbox" id="drawer-toggle" class="drawer-checkbox">
 <label for="drawer-toggle" class="drawer-trigger-btn"><span>🟢</span><span>📋 Informe del Proyecto</span></label>
@@ -751,12 +729,10 @@ def render_ambiente_1():
     col_draw, col_stage = st.columns([1.0, 1.05], gap="large")
 
     with col_draw:
-        st.markdown('<div id="target-canvas-box" style="position:relative;">', unsafe_allow_html=True)
         current_chapter_num = len(st.session_state.story_chapters) + 1
         st.markdown(f"##### 🪞 El Espejo de Luz &bull; *Capítulo {current_chapter_num}*")
         st.caption("Pellizca el índice y el pulgar para pintar con polvo de estrellas.")
         canvas_output = air_canvas(default=None, key="air_canvas_ui")
-        st.markdown('</div>', unsafe_allow_html=True)
 
     if canvas_output:
         try:
@@ -797,12 +773,12 @@ def render_ambiente_1():
                     5. Bautiza la pieza musical con un título evocador (ej: "Danza del Viento", "Nana de la Luna", "Marcha de las Estrellas").
                     6. Carácter emocional breve (ej: "Lírico y Soñador", "Misterioso", "Jovial").
                     7. COMPÓN UNA MELODÍA ARMÓNICA Y REAL de 8 a 14 notas musicales.
-                       REGLA OBLIGATORIA DE FRECUENCIAS (Cajita de música cálida, tonos graves y medios, NUNCA chirridos agudos):
-                       - Usa EXCLUSIVAMENTE notas afinadas de la escala pentatónica:
-                         G3: 196 Hz | A3: 220 Hz | B3: 247 Hz | C4: 262 Hz | D4: 294 Hz | E4: 330 Hz | F4: 349 Hz | G4: 392 Hz | A4: 440 Hz | C5: 523 Hz
-                         (Usa 0 para silencios y pausas rítmicas indispensables).
-                       - Duraciones en ms: 180 (ligera), 280 (media), 450 (nota reposada final).
-                       - Concluye la melodía reposando en la tónica (C4: 262 o G3: 196).
+                   REGLA OBLIGATORIA DE FRECUENCIAS (Cajita de música cálida, tonos graves y medios, NUNCA chirridos agudos):
+                   - Usa EXCLUSIVAMENTE notas afinadas de la escala pentatónica:
+                     G3: 196 Hz | A3: 220 Hz | B3: 247 Hz | C4: 262 Hz | D4: 294 Hz | E4: 330 Hz | F4: 349 Hz | G4: 392 Hz | A4: 440 Hz | C5: 523 Hz
+                     (Usa 0 para silencios y pausas rítmicas indispensables).
+                   - Duraciones en ms: 180 (ligera), 280 (media), 450 (nota reposada final).
+                   - Concluye la melodía reposando en la tónica (C4: 262 o G3: 196).
 
                     8. Parámetros del escenario mecánico:
                        - sky_rgb: [R, G, B] color del cielo/arco superior.
@@ -944,12 +920,11 @@ def render_ambiente_1():
 
         st.caption("💡 *Asegúrate de pulsar el botón verde ▶️ (Play) dentro de Wokwi para encender el escenario.*")
 
-        st.markdown('<div class="stage-box" id="target-stage-box" style="position:relative;">', unsafe_allow_html=True)
+        # Persistent Wokwi Stage Frame
         components.iframe(
             f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram&v={st.session_state.wokwi_session_token}",
             height=350
         )
-        st.markdown('</div>', unsafe_allow_html=True)
 
         if st.session_state.current_cutout:
             st.markdown(f"""
@@ -961,7 +936,7 @@ def render_ambiente_1():
         if st.session_state.story_chapters:
             latest = st.session_state.story_chapters[-1]
             st.markdown(f"""
-            <div class="story-card" id="target-story-box" style="position:relative;">
+            <div class="story-card">
               <div>
                 <span class="chapter-badge">Capítulo {latest['num']} &bull; {latest['entity']}</span>
                 <span class="music-badge">🎼 {latest.get('score_title', 'Partitura')} ({latest.get('score_mood', 'Mágico')})</span>
@@ -975,7 +950,7 @@ def render_ambiente_1():
                 st.audio(st.session_state.current_audio, format="audio/mp3", autoplay=True)
         else:
             st.markdown("""
-            <div class="story-card" id="target-story-box" style="position:relative; text-align: center; padding: 24px;">
+            <div class="story-card" style="text-align: center; padding: 24px;">
               <div style="font-size: 2rem; margin-bottom: 6px;">✨📜</div>
               <div style="color: #cbd5e1; font-weight: 500;">El teatro está en penumbra esperando la función</div>
               <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Dibuja la primera criatura o paisaje para abrir el telón y escuchar su música original.</div>
