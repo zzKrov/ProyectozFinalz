@@ -3,22 +3,21 @@ import streamlit.components.v1 as components
 from openai import OpenAI
 import paho.mqtt.publish as publish
 import json
-import time
 import os
 
 st.set_page_config(
-    page_title="Historias en el aire",
-    page_icon="✨",
+    page_title="El Espejo de las Historias Vivas",
+    page_icon="🔮",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 # ---------------------------------------------------------
-# Warm, Understated Styling
+# Magical & Luminous Styling
 # ---------------------------------------------------------
-custom_theme = """
+magical_theme = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Lora:ital,wght@0,500;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&display=swap');
 
 [data-testid="collapsedControl"], section[data-testid="stSidebar"], #MainMenu, footer {
     display: none !important;
@@ -26,62 +25,124 @@ custom_theme = """
 
 html, body, [data-testid="stAppViewContainer"] {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
-    background: #141312 !important;
-    color: #ede6de !important;
+    background: radial-gradient(ellipse at 50% 0%, #171138 0%, #0a081a 60%, #05040d 100%) !important;
+    color: #f1f5f9 !important;
 }
 
-.header-container {
-    padding: 12px 0 20px 0;
-    border-bottom: 1px solid #292623;
-    margin-bottom: 24px;
+/* Twinkling Stardust Background Overlay */
+.stars-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    background-image: 
+        radial-gradient(1px 1px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 120px 80px, #38bdf8, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 240px 180px, #c084fc, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 380px 240px, #fde047, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 540px 120px, #ffffff, rgba(0,0,0,0));
+    background-repeat: repeat;
+    background-size: 600px 600px;
+    opacity: 0.35;
+    animation: driftStars 60s linear infinite;
+}
+@keyframes driftStars {
+    from { transform: translateY(0); }
+    to { transform: translateY(-600px); }
+}
+
+.header-glow {
+    text-align: center;
+    padding: 10px 0 16px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(192, 132, 252, 0.2);
 }
 .app-title {
-    font-size: 1.7rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: #ede6de;
+    font-family: 'Playfair Display', serif;
+    font-size: 2.3rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    background: linear-gradient(135deg, #fbcfe8 0%, #c084fc 40%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 20px rgba(192, 132, 252, 0.4));
 }
 .app-subtitle {
     font-size: 0.95rem;
-    color: #9c9389;
+    color: #cbd5e1;
     margin-top: 4px;
 }
 
-.story-box {
-    background: #1d1b19;
-    border: 1px solid #2e2b27;
-    border-radius: 12px;
+/* Glassmorphism Story Card */
+.story-card {
+    background: rgba(26, 20, 56, 0.65);
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(112, 0, 255, 0.25);
+    backdrop-filter: blur(14px);
+    border-radius: 16px;
     padding: 16px 20px;
-    margin-top: 14px;
+    margin-top: 10px;
 }
-.story-text {
-    font-family: 'Lora', Georgia, serif;
+.story-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 4px;
+}
+.chapter-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    margin-bottom: 6px;
+}
+.story-body {
+    font-family: 'Playfair Display', serif;
     font-size: 1.05rem;
     line-height: 1.6;
-    color: #d6cdc4;
-    margin-top: 8px;
-}
-.story-title {
-    font-weight: 600;
-    font-size: 1.15rem;
-    color: #ede6de;
+    color: #e2e8f0;
 }
 
-div.stButton > button {
-    background-color: #262320 !important;
-    color: #ede6de !important;
-    border: 1px solid #3d3934 !important;
-    border-radius: 8px !important;
-    padding: 6px 14px !important;
-    font-size: 0.85rem !important;
+/* Stage Framing & Persistent Overlay */
+.stage-box {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(192, 132, 252, 0.35);
+    box-shadow: 0 0 30px rgba(112, 0, 255, 0.2);
+    background: #0d0a1f;
 }
-div.stButton > button:hover {
-    background-color: #332f2a !important;
-    border-color: #544e47 !important;
+.hologram-overlay-container {
+    position: relative;
+    height: 0px;
+    top: -245px;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+@keyframes floatAura {
+    0%   { transform: translateY(0px) scale(1) rotate(0deg); }
+    50%  { transform: translateY(-16px) scale(1.06) rotate(4deg); }
+    100% { transform: translateY(0px) scale(1) rotate(0deg); }
+}
+.stage-cutout {
+    max-height: 155px;
+    max-width: 155px;
+    object-fit: contain;
+    animation: floatAura 6s infinite ease-in-out;
+    filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 35px rgba(192, 132, 252, 0.7));
 }
 </style>
+<div class="stars-overlay"></div>
 """
-st.markdown(custom_theme, unsafe_allow_html=True)
+st.markdown(magical_theme, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # State & Configuration
@@ -92,91 +153,102 @@ MQTT_TOPIC = "air_draw_story/stage_cue"
 
 if "api_key" not in st.session_state:
     st.session_state.api_key = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
+if "story_chapters" not in st.session_state:
+    st.session_state.story_chapters = []
 if "processed_id" not in st.session_state:
     st.session_state.processed_id = None
-if "story_data" not in st.session_state:
-    st.session_state.story_data = None
-if "audio_bytes" not in st.session_state:
-    st.session_state.audio_bytes = None
-if "drawing_cutout" not in st.session_state:
-    st.session_state.drawing_cutout = None
-if "stage_version" not in st.session_state:
-    st.session_state.stage_version = int(time.time())
+if "current_audio" not in st.session_state:
+    st.session_state.current_audio = None
+if "current_cutout" not in st.session_state:
+    st.session_state.current_cutout = None
 
-# Top Header
+# Top Title
 st.markdown("""
-<div class="header-container">
-  <div class="app-title">Historias en el aire</div>
-  <div class="app-subtitle">Dibuja una silueta frente a la cámara y mira cómo cobra vida en el escenario.</div>
+<div class="header-glow">
+  <div class="app-title">🔮 El Espejo de las Historias Vivas ✨</div>
+  <div class="app-subtitle">Dibuja en el aire con tus dedos. Cada trazo crea un nuevo capítulo que continúa tu historia en el teatro mecánico.</div>
 </div>
 """, unsafe_allow_html=True)
 
+# Missing Key Warning
 if not st.session_state.api_key:
-    key_val = st.text_input("OpenAI API Key:", type="password", placeholder="sk-...")
-    if key_val:
-        st.session_state.api_key = key_val.strip()
+    temp_key = st.text_input("Ingresa tu OpenAI API Key para despertar la magia:", type="password", placeholder="sk-...")
+    if temp_key:
+        st.session_state.api_key = temp_key.strip()
         st.rerun()
 
 component_path = os.path.join(os.path.dirname(__file__), "canvas_component")
 air_canvas = components.declare_component("air_canvas", path=component_path)
 
-col_draw, col_stage = st.columns([1.0, 1.0], gap="large")
+col_draw, col_stage = st.columns([1.0, 1.05], gap="large")
 
 with col_draw:
-    st.caption("Pellizca el pulgar y el índice para trazar tu figura.")
+    current_chapter_num = len(st.session_state.story_chapters) + 1
+    st.markdown(f"##### 🪞 El Lienzo de Luz &bull; *Capítulo {current_chapter_num}*")
+    st.caption("Pellizca el índice y el pulgar para trazar con chispas de luz.")
     canvas_output = air_canvas(default=None, key="air_canvas_ui")
 
-# Handle Drawing Submission
+# ---------------------------------------------------------
+# Sequential Storytelling Processing (Continuity Engine)
+# ---------------------------------------------------------
 if canvas_output:
     try:
         data = json.loads(canvas_output) if isinstance(canvas_output, str) else canvas_output
         action_id = data.get("id")
 
         if not st.session_state.api_key:
-            st.error("Ingresa una OpenAI API Key para crear la historia.")
+            st.error("Se requiere una OpenAI API Key para tejer la historia.")
         elif action_id and action_id != st.session_state.processed_id:
             st.session_state.processed_id = action_id
-            st.session_state.drawing_cutout = data.get("cutout")
+            cutout_img = data.get("cutout")
+            st.session_state.current_cutout = cutout_img
 
-            with st.spinner("Creando la historia y animando el escenario..."):
+            with st.spinner(f"✨ Tejiendo el Capítulo {current_chapter_num} y animando el escenario..."):
                 client = OpenAI(api_key=st.session_state.api_key)
                 base64_data = data.get("vision").split(",")[1]
 
-                prompt = """
-                Analiza este dibujo hecho a mano en el aire:
-                1. Identifica qué figura u objeto es.
-                2. Escribe una historia breve, cálida y bonita en ESPAÑOL (2 o 3 oraciones).
-                3. Diseña el movimiento de los 5 servos del escenario físico:
+                # Build narrative history for true story continuity
+                history_prompt = ""
+                if st.session_state.story_chapters:
+                    history_prompt = "HISTORIA HASTA EL MOMENTO:\n"
+                    for ch in st.session_state.story_chapters:
+                        history_prompt += f"- Capítulo {ch['num']} ({ch['title']}): {ch['text']}\n"
+                else:
+                    history_prompt = "Este es el comienzo de una nueva aventura mágica.\n"
+
+                prompt = f"""
+                Eres un narrador de cuentos mágicos e ilustrados para niños y soñadores.
+                {history_prompt}
+
+                EL USUARIO ACABA DE DIBUJAR UN NUEVO ELEMENTO EN EL AIRE (mira la imagen adjunta).
+
+                INSTRUCCIONES:
+                1. Identifica con cariño y fantasía qué criatura, objeto o símbolo dibujó.
+                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 4 oraciones).
+                   IMPORTANTE: Debe ser una continuación directa y fluida de los capítulos anteriores, integrando este nuevo dibujo como el siguiente suceso o personaje de la aventura.
+                3. Asigna un título poético al capítulo (máx. 25 caracteres).
+                4. Control del escenario mecánico Wokwi (5 servomotores y luces):
                    - kinematics: [base, hombro, codo, muñeca, herramienta] (ángulos de 25 a 155 grados).
-                   - primary_rgb: [R, G, B] color cálido para las luces principales.
-                   - sec_rgb: [R, G, B] color secundario de fondo.
-                4. Compón una pequeña melodía agradable de 12 a 16 notas para el zumbador del escenario:
-                   array "melody" con objetos {"f": frecuencia_hz [260 a 950], "d": duracion_ms [120 a 300]}.
-                5. 4 keyframes suaves de animación CSS transform (x en [-45, 45], y en [-20, 20], scale [0.95, 1.15], rotate [-12, 12]).
+                   - primary_rgb: [R, G, B] color luminoso principal para el anillo de estrellas.
+                   - sec_rgb: [R, G, B] color secundario para las candilejas de suelo.
+                5. Compón una melodía mágica de 12 a 16 notas para el escenario:
+                   array "melody" con objetos {{"f": frecuencia_hz [260 a 950], "d": duracion_ms [120 a 300]}}.
 
                 Responde ÚNICAMENTE en JSON con esta estructura:
-                {
-                  "model": "Nombre del personaje",
-                  "title": "Título corto",
-                  "story_spanish": "Cuento en español...",
-                  "primary_rgb": [220, 120, 60],
-                  "sec_rgb": [60, 130, 200],
-                  "kinematics": [90, 50, 130, 90, 110],
+                {{
+                  "entity": "nombre del nuevo elemento",
+                  "title": "Título del Capítulo",
+                  "story_spanish": "Continuación de la historia...",
+                  "primary_rgb": [0, 240, 255],
+                  "sec_rgb": [192, 132, 252],
+                  "kinematics": [90, 55, 125, 80, 110],
                   "melody": [
-                    {"f": 392, "d": 150},
-                    {"f": 440, "d": 150},
-                    {"f": 523, "d": 180},
-                    {"f": 659, "d": 260},
-                    {"f": 587, "d": 150},
-                    {"f": 523, "d": 300}
-                  ],
-                  "keyframes": [
-                    { "x": 0, "y": -18, "scale": 1.1, "rotate": 6 },
-                    { "x": 30, "y": -8, "scale": 0.95, "rotate": -6 },
-                    { "x": -25, "y": 12, "scale": 1.05, "rotate": 8 },
-                    { "x": 0, "y": 0, "scale": 1.0, "rotate": 0 }
+                    {{"f": 392, "d": 150}},
+                    {{"f": 523, "d": 180}},
+                    {{"f": 659, "d": 200}},
+                    {{"f": 784, "d": 320}}
                   ]
-                }
+                }}
                 """
 
                 completion = client.chat.completions.create(
@@ -190,127 +262,113 @@ if canvas_output:
                         ]
                     }]
                 )
-                story_json = json.loads(completion.choices[0].message.content)
-                st.session_state.story_data = story_json
+                chapter_data = json.loads(completion.choices[0].message.content)
 
-                # Audio synthesis
+                # Generate Spanish audio narration for this chapter
                 tts = client.audio.speech.create(
                     model="tts-1",
-                    voice="alloy",
-                    input=story_json["story_spanish"]
+                    voice="nova",
+                    input=chapter_data["story_spanish"]
                 )
-                st.session_state.audio_bytes = tts.content
+                audio_bytes = tts.content
+                st.session_state.current_audio = audio_bytes
 
-                # Send cue to Wokwi via MQTT
+                # Save to episodic story history
+                st.session_state.story_chapters.append({
+                    "num": current_chapter_num,
+                    "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
+                    "entity": chapter_data.get("entity", "Creación mágica"),
+                    "text": chapter_data.get("story_spanish", ""),
+                    "cutout": cutout_img,
+                    "audio": audio_bytes
+                })
+
+                # Send cue to live Wokwi via MQTT (triggers live servos & buzzer without reloading!)
                 try:
                     publish.single(
                         MQTT_TOPIC,
-                        json.dumps(story_json),
+                        json.dumps(chapter_data),
                         hostname=MQTT_BROKER,
                         retain=True,
                         keepalive=10
                     )
-                except Exception as e:
+                except Exception:
                     pass
 
                 st.rerun()
 
     except Exception as err:
-        st.error(f"Nota: {err}")
+        st.error(f"Hechizo interrumpido: {err}")
 
 with col_stage:
-    col_t, col_btn = st.columns([0.75, 0.25])
-    with col_t:
-        st.caption("El escenario en vivo (Wokwi)")
-    with col_btn:
-        if st.button("🔄 Recargar"):
-            st.session_state.stage_version = int(time.time())
-            st.rerun()
+    col_st_title, col_reset = st.columns([0.7, 0.3])
+    with col_st_title:
+        st.markdown("##### 🎪 El Escenario en Vivo & Holograma")
+    with col_reset:
+        if st.session_state.story_chapters:
+            if st.button("✨ Nueva Aventura"):
+                st.session_state.story_chapters = []
+                st.session_state.current_cutout = None
+                st.session_state.current_audio = None
+                st.session_state.processed_id = None
+                st.rerun()
 
-    # The Unified Stage Box: Live Wokwi background + Floating Cutout in foreground
-    wokwi_embed_url = f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram&v={st.session_state.stage_version}"
+    # -------------------------------------------------------------
+    # Persistent Wokwi Stage (Static URL prevents simulation reset)
+    # -------------------------------------------------------------
+    st.markdown('<div class="stage-box">', unsafe_allow_html=True)
+    components.iframe(
+        f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram",
+        height=350
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    if st.session_state.story_data and st.session_state.drawing_cutout:
-        kf = st.session_state.story_data.get("keyframes", [])
-        anim_css = f"""
-        @keyframes floatDance {{
-          0%   {{ transform: translate(0px, 0px) scale(1) rotate(0deg); }}
-          25%  {{ transform: translate({kf[0]['x']}px, {kf[0]['y']}px) scale({kf[0]['scale']}) rotate({kf[0]['rotate']}deg); }}
-          50%  {{ transform: translate({kf[1]['x']}px, {kf[1]['y']}px) scale({kf[1]['scale']}) rotate({kf[1]['rotate']}deg); }}
-          75%  {{ transform: translate({kf[2]['x']}px, {kf[2]['y']}px) scale({kf[2]['scale']}) rotate({kf[2]['rotate']}deg); }}
-          100% {{ transform: translate({kf[3]['x']}px, {kf[3]['y']}px) scale({kf[3]['scale']}) rotate({kf[3]['rotate']}deg); }}
-        }}
-        """
-        overlay_html = f"""
-        <img src="{st.session_state.drawing_cutout}" 
-             style="max-height: 150px; max-width: 150px; object-fit: contain; animation: floatDance 5s infinite alternate ease-in-out; filter: drop-shadow(0 4px 18px rgba(0,0,0,0.85));" />
-        """
-    else:
-        anim_css = ""
-        overlay_html = """
-        <div style="background: rgba(22, 21, 20, 0.75); backdrop-filter: blur(4px); padding: 8px 16px; border-radius: 20px; font-size: 13px; color: #a89f94; border: 1px solid rgba(255,255,255,0.06);">
-          El escenario está listo. Dibuja algo y pulsa "Dar vida".
-        </div>
-        """
-
-    stage_container_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        {anim_css}
-        body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; }}
-        .stage-wrapper {{
-          position: relative;
-          width: 100%;
-          height: 380px;
-          border-radius: 12px;
-          overflow: hidden;
-          background: #181716;
-          border: 1px solid #2e2b27;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-        }}
-        .wokwi-frame {{
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          border: none;
-          z-index: 1;
-        }}
-        .drawing-overlay {{
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          z-index: 2;
-          pointer-events: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }}
-      </style>
-    </head>
-    <body>
-      <div class="stage-wrapper">
-        <iframe src="{wokwi_embed_url}" class="wokwi-frame"></iframe>
-        <div class="drawing-overlay">
-          {overlay_html}
-        </div>
-      </div>
-    </body>
-    </html>
-    """
-    components.html(stage_container_html, height=395)
-
-    # Narrative Display
-    if st.session_state.story_data:
-        story = st.session_state.story_data
-        
+    # -------------------------------------------------------------
+    # Dancing Cutout Floating Layer (Non-reloading DOM Overlay)
+    # -------------------------------------------------------------
+    if st.session_state.current_cutout:
         st.markdown(f"""
-        <div class="story-box">
-          <div class="story-title">{story.get('title', 'Historia')}</div>
-          <div class="story-text">{story.get('story_spanish', '')}</div>
+        <div class="hologram-overlay-container">
+            <img src="{st.session_state.current_cutout}" class="stage-cutout" />
         </div>
         """, unsafe_allow_html=True)
 
-        if st.session_state.audio_bytes:
-            st.audio(st.session_state.audio_bytes, format="audio/mp3", autoplay=True)
+    # -------------------------------------------------------------
+    # Active Chapter Story Card
+    # -------------------------------------------------------------
+    if st.session_state.story_chapters:
+        latest = st.session_state.story_chapters[-1]
+        st.markdown(f"""
+        <div class="story-card">
+          <div class="chapter-badge">Capítulo {latest['num']} &bull; {latest['entity']}</div>
+          <div class="story-heading">{latest['title']}</div>
+          <div class="story-body">{latest['text']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.session_state.current_audio:
+            st.audio(st.session_state.current_audio, format="audio/mp3", autoplay=True)
+    else:
+        st.markdown("""
+        <div class="story-card" style="text-align: center; padding: 24px;">
+          <div style="font-size: 2rem; margin-bottom: 6px;">✨📜</div>
+          <div style="color: #cbd5e1; font-weight: 500;">El libro de historias está abierto en blanco</div>
+          <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Dibuja el primer personaje u objeto para comenzar el Capítulo 1.</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# Full Illustrated Storybook History (Chronicle)
+# ---------------------------------------------------------
+if len(st.session_state.story_chapters) > 1:
+    st.markdown("---")
+    st.markdown("### 📖 Crónica del Cuento Completo")
+    st.caption("Revive los capítulos anteriores creados con cada uno de tus dibujos:")
+
+    ch_cols = st.columns(len(st.session_state.story_chapters))
+    for idx, ch in enumerate(st.session_state.story_chapters):
+        with ch_cols[idx]:
+            st.markdown(f"**Cap. {ch['num']}: {ch['title']}**")
+            if ch.get("cutout"):
+                st.image(ch["cutout"], width=90)
+            st.caption(ch["text"])
