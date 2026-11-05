@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Global Constants & Configuration (Fixed Scope)
+# Global Constants & Configuration
 # ---------------------------------------------------------
 WOKWI_PROJECT_ID = "479816492813091841"
 MQTT_BROKER = "broker.hivemq.com"
@@ -78,13 +78,13 @@ def render_report_image(filename, title, caption):
             pass
     return f"""<div class="image-slot"><div style="font-size:1.3rem;">🖼️ <b>{filename}</b></div><div style="font-weight:600;font-size:0.85rem;color:#cbd5e1;margin-top:4px;">{title}</div><div class="image-slot-caption">{caption}</div></div>"""
 
-slot_img_4 = render_report_image("4.png", "Trazado Gestual en el Aire", "Figura 4: Gesto de pinza y dibujo en el aire frente a la webcam")
-slot_img_3 = render_report_image("3.png", "Crónica de Capítulos Continuos", "Figura 3: Sección inferior de capítulos continuos e historia secuencial")
-slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2: Estado inicial del circuito Wokwi — Telones cerrados y reposo")
-slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en directo — Música en zumbador, texto OLED y luces encendidas")
+slot_img_4 = render_report_image("4.png", "Trazado Gestual en el Aire", "Figura 4: Interfaz de dibujo aéreo y captura gestual mediante pinza (4.png)")
+slot_img_3 = render_report_image("3.png", "Crónica de Capítulos Continuos", "Figura 3: Registro inferior de capítulos secuenciales e historia viva (3.png)")
+slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2: Estado inicial del circuito Wokwi — Telones cerrados y reposo (2.png)")
+slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en vivo — Música en zumbador, OLED activa y luces encendidas (1.png)")
 
 # ---------------------------------------------------------
-# Luminous Theme & Pure CSS Drawer
+# Luminous Theme & Pure CSS Drawer (Flush-Left HTML)
 # ---------------------------------------------------------
 magical_theme = f"""
 <style>
@@ -145,6 +145,14 @@ html, body, [data-testid="stAppViewContainer"] {{
     font-size: 0.88rem;
     color: #cbd5e1;
     margin-top: 2px;
+}}
+
+.companion-target-highlight {{
+    outline: 3.5px solid var(--highlight-color, #38bdf8) !important;
+    box-shadow: 0 0 45px var(--highlight-color, #38bdf8), 0 0 80px rgba(192, 132, 252, 0.4) !important;
+    border-radius: 16px !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transform: scale(1.012) !important;
 }}
 
 .story-card {{
@@ -225,6 +233,15 @@ html, body, [data-testid="stAppViewContainer"] {{
     filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 35px rgba(192, 132, 252, 0.7));
 }}
 
+div.stButton > button {{
+    background: rgba(30, 27, 75, 0.7) !important;
+    color: #ede6de !important;
+    border: 1px solid rgba(192, 132, 252, 0.3) !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    padding: 4px 12px !important;
+}}
+
 /* Pure CSS Drawer */
 .drawer-checkbox {{
     display: none !important;
@@ -282,8 +299,8 @@ html, body, [data-testid="stAppViewContainer"] {{
     position: fixed;
     top: 0;
     right: 0;
-    width: 480px;
-    max-width: 90vw;
+    width: 500px;
+    max-width: 92vw;
     height: 100vh;
     background: rgba(15, 11, 33, 0.97) !important;
     backdrop-filter: blur(28px);
@@ -300,7 +317,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 .drawer-backdrop {{
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(5, 4, 13, 0.18) !important;
+    background: rgba(5, 4, 13, 0.15) !important;
     backdrop-filter: none !important;
     z-index: 9999999 !important;
     opacity: 0;
@@ -404,6 +421,10 @@ html, body, [data-testid="stAppViewContainer"] {{
     color: #c084fc;
     border: 1px solid rgba(192, 132, 252, 0.45);
 }}
+.companion-link:hover {{
+    transform: translateY(-1px) scale(1.05);
+    filter: brightness(1.2);
+}}
 
 .image-slot {{
     width: 100%;
@@ -435,6 +456,13 @@ html, body, [data-testid="stAppViewContainer"] {{
 <div style="font-size:0.78rem;color:#a855f7;font-weight:600;margin-bottom:12px;">ESTUDIANTE: Juan David Segura &bull; INTERFACES MULTIMODALES</div>
 <div class="drawer-section-title">✨ ¿Qué es este proyecto?</div>
 <p>Es un <b>teatro interactivo que mezcla lo digital con lo físico</b>. Dibujas figuras en el aire con tus dedos frente a la cámara web, y el sistema convierte ese dibujo en un cuento narrado por voz, le compone una melodía musical original y hace que un escenario físico en miniatura (simulado en Wokwi) actúe la escena abriendo telones y moviendo piezas en tiempo real.</p>
+<div class="drawer-section-title">🎛️ ¿Qué es el Selector de Ambientes y la Vista Dual?</div>
+<p>Para cumplir los requisitos de interfaces multimodales, el sistema cuenta con dos ambientes interactivos y un modo unificado:</p>
+<ul style="padding-left:18px;margin-top:4px;">
+<li style="margin-bottom:6px;"><b>Ambiente 1 (Teatro & Narrativa):</b> Modo creativo. Usa visión artificial para dibujar en el aire, genera cuentos ilustrados por capítulos con voz en alta definición y proyecta el dibujo flotante sobre el proscenio.</li>
+<li style="margin-bottom:6px;"><b>Ambiente 2 (Consola & Telemetría):</b> Modo de ingeniería. Permite controlar manualmente los servomotores con barras deslizadoras (sliders), cambiar colores y monitorear la telemetría bidireccional en vivo enviada desde el ESP32.</li>
+<li style="margin-bottom:6px;"><b>Vista Dual (Ambos a la vez):</b> Muestra ambos ambientes simultáneamente en la misma pantalla para ver el cuento, el escenario y los instrumentos técnicos al mismo tiempo.</li>
+</ul>
 <div class="drawer-section-title">⚙️ ¿Cómo funciona?</div>
 <ol style="padding-left:18px;margin-top:4px;">
 <li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan" data-target="canvas" data-color="#38bdf8">🔍 Resaltar Lienzo de Dibujo</span></li>
@@ -442,6 +470,7 @@ html, body, [data-testid="stAppViewContainer"] {{
 <li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple" data-target="story" data-color="#c084fc">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
 {slot_img_3}
 <li style="margin-bottom:10px;"><b>El escenario cobra vida:</b><ul style="padding-left:16px;margin-top:4px;"><li>En tu pantalla, tu dibujo aparece recortado flotando y bailando sobre el escenario.</li><li>Por internet (vía MQTT), la placa ESP32 en Wokwi recibe la orden: abre los telones, enciende las luces del color del cuento, eleva al personaje y toca la melodía con su zumbador como una cajita de música.</li></ul></li>
+<li style="margin-bottom:10px;"><b>Telemetría de retorno bidireccional:</b> Al iniciar y finalizar cada acto, el ESP32 transmite de vuelta a Streamlit su estado físico, confirmando que la orden fue ejecutada en el circuito.<br><span class="companion-link cyan" data-target="telemetry" data-color="#38bdf8">📡 Resaltar Monitor de Telemetría</span></li>
 </ol>
 <div class="drawer-section-title">🦾 ¿Qué hace cada servomotor exactamente?</div>
 <p>A continuación se observa el estado de reposo del teatro antes de que se inicie la obra:</p>
@@ -456,11 +485,161 @@ html, body, [data-testid="stAppViewContainer"] {{
 <ul style="padding-left:18px;margin-top:4px;">
 <li style="margin-bottom:6px;"><b>Luces LED (Anillo y Tira):</b> Iluminan el arco del cielo y el suelo con el color y brillo que elija la IA para la escena.</li>
 <li style="margin-bottom:6px;"><b>Pantalla OLED:</b> Muestra el título de la obra y el nombre de la partitura que está sonando.</li>
-<li style="margin-bottom:6px;"><b>Zumbador:</b> Toca la partitura que compuso la IA nota por nota a un volumen suave.</li>
+<li style="margin-bottom:6px;"><b>Zumbador:</b> Toca la partitura que compuso la IA nota por nota a un volumen suave como cajita de música.</li>
 </ul>
 <div style="text-align:center;margin-top:25px;padding-top:15px;border-top:1px solid rgba(192,132,252,0.2);font-size:0.8rem;color:#94a3b8;">Pasa el mouse sobre los botones para lanzar partículas hacia cada elemento.</div>
 </div>
 </div>
+
+<!-- INYECCIÓN DIRECTA EN EL DOM PADRE (SIN BLOQUEO DE IFRAME) -->
+<img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>" 
+     style="display:none;" 
+     onerror="(function(){{
+        var doc = document;
+        
+        // 1. Crear canvas en el DOM principal
+        var canvas = doc.getElementById('companion-trail-canvas');
+        if (!canvas) {{
+            canvas = doc.createElement('canvas');
+            canvas.id = 'companion-trail-canvas';
+            canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999999;';
+            doc.body.appendChild(canvas);
+        }}
+        var ctx = canvas.getContext('2d');
+
+        function resize() {{
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }}
+        resize();
+        window.addEventListener('resize', resize);
+
+        var particles = [];
+        var isHovering = false;
+        var currentSource = null;
+        var currentTarget = null;
+        var currentColor = '#38bdf8';
+        var animId = null;
+
+        function getTarget(key) {{
+            if (key === 'canvas') return doc.getElementById('target-canvas-box') || doc.querySelector('[data-testid=\\"stColumn\\"]:first-child');
+            if (key === 'stage') return doc.getElementById('target-stage-box') || doc.querySelector('.stage-box');
+            if (key === 'story') return doc.getElementById('target-story-box') || doc.querySelector('.story-card');
+            if (key === 'telemetry') return doc.getElementById('target-telemetry-box');
+            return null;
+        }}
+
+        function spawn() {{
+            if (!isHovering || !currentSource || !currentTarget) return;
+            var rA = currentSource.getBoundingClientRect();
+            var rB = currentTarget.getBoundingClientRect();
+
+            var x0 = rA.left;
+            var y0 = rA.top + rA.height / 2;
+            var x1 = rB.right;
+            var y1 = rB.top + rB.height / 2;
+            var cx = (x0 + x1) / 2;
+            var cy = Math.min(y0, y1) - 60;
+
+            for (var i = 0; i < 3; i++) {{
+                particles.push({{
+                    x0: x0, y0: y0, x1: x1, y1: y1, cx: cx, cy: cy,
+                    t: 0, speed: 0.02 + Math.random() * 0.02,
+                    size: 2.2 + Math.random() * 3.5,
+                    wobble: (Math.random() - 0.5) * 16,
+                    color: currentColor
+                }});
+            }}
+        }}
+
+        function loop() {{
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            spawn();
+
+            if (isHovering && currentTarget) {{
+                var r = currentTarget.getBoundingClientRect();
+                var p = 6;
+                var bx = r.left - p, by = r.top - p, bw = r.width + p * 2, bh = r.height + p * 2;
+
+                ctx.save();
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = 3.5;
+                ctx.shadowColor = currentColor;
+                ctx.shadowBlur = 24;
+                ctx.strokeRect(bx, by, bw, bh);
+
+                var len = 22;
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(bx, by + len); ctx.lineTo(bx, by); ctx.lineTo(bx + len, by);
+                ctx.moveTo(bx + bw - len, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + len);
+                ctx.moveTo(bx, by + bh - len); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + len, by + bh);
+                ctx.moveTo(bx + bw - len, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - len);
+                ctx.stroke();
+                ctx.restore();
+            }}
+
+            for (var j = particles.length - 1; j >= 0; j--) {{
+                var pt = particles[j];
+                pt.t += pt.speed;
+                if (pt.t >= 1) {{ particles.splice(j, 1); continue; }}
+
+                var invT = 1 - pt.t;
+                var curX = invT * invT * pt.x0 + 2 * invT * pt.t * pt.cx + pt.t * pt.t * pt.x1;
+                var curY = invT * invT * pt.y0 + 2 * invT * pt.t * pt.cy + pt.t * pt.t * pt.y1;
+                curY += Math.sin(pt.t * Math.PI * 4) * pt.wobble;
+
+                var alpha = pt.t < 0.2 ? pt.t / 0.2 : (1 - pt.t);
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(curX, curY, pt.size * (1 - pt.t * 0.4), 0, 2 * Math.PI);
+                ctx.fillStyle = pt.color;
+                ctx.shadowColor = pt.color;
+                ctx.shadowBlur = 12;
+                ctx.globalAlpha = alpha;
+                ctx.fill();
+                ctx.restore();
+            }}
+
+            if (particles.length > 0 || isHovering) {{
+                animId = requestAnimationFrame(loop);
+            }} else {{
+                animId = null;
+            }}
+        }}
+
+        function bind() {{
+            var links = doc.querySelectorAll('.companion-link');
+            links.forEach(function(l) {{
+                if (l.dataset.bound) return;
+                l.dataset.bound = 'true';
+
+                l.addEventListener('mouseenter', function() {{
+                    var targetKey = l.getAttribute('data-target');
+                    var color = l.getAttribute('data-color') || '#38bdf8';
+                    var targetEl = getTarget(targetKey);
+
+                    if (targetEl) {{
+                        isHovering = true;
+                        currentSource = l;
+                        currentTarget = targetEl;
+                        currentColor = color;
+                        targetEl.style.setProperty('--highlight-color', color);
+                        targetEl.classList.add('companion-target-highlight');
+                        if (!animId) animId = requestAnimationFrame(loop);
+                    }}
+                }});
+
+                l.addEventListener('mouseleave', function() {{
+                    isHovering = false;
+                    if (currentTarget) currentTarget.classList.remove('companion-target-highlight');
+                    currentTarget = null;
+                    currentSource = null;
+                }});
+            }});
+        }}
+        setInterval(bind, 800);
+     }})()" />
 """
 st.markdown(magical_theme, unsafe_allow_html=True)
 
@@ -520,7 +699,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Navigation switcher for the two environments
 view_mode = st.radio(
     "Selecciona el Ambiente Interactivo:",
     options=[
@@ -576,10 +754,12 @@ def render_ambiente_1():
     col_draw, col_stage = st.columns([1.0, 1.05], gap="large")
 
     with col_draw:
+        st.markdown('<div id="target-canvas-box">', unsafe_allow_html=True)
         current_chapter_num = len(st.session_state.story_chapters) + 1
         st.markdown(f"##### 🪞 El Espejo de Luz &bull; *Capítulo {current_chapter_num}*")
         st.caption("Pellizca el índice y el pulgar para pintar con polvo de estrellas.")
         canvas_output = air_canvas(default=None, key="air_canvas_ui")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if canvas_output:
         try:
@@ -688,7 +868,6 @@ def render_ambiente_1():
                     clean_json = match.group(0) if match else raw_content.strip()
                     chapter_data = json.loads(clean_json)
 
-                    # High-Fidelity Voice Synthesis
                     story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
                     tts = client.audio.speech.create(
                         model="tts-1-hd",
@@ -767,7 +946,6 @@ def render_ambiente_1():
 
         st.caption("💡 *Asegúrate de pulsar el botón verde ▶️ (Play) dentro de Wokwi para encender el escenario.*")
 
-        # The Persistent Wokwi Stage
         st.markdown('<div class="stage-box" id="target-stage-box">', unsafe_allow_html=True)
         components.iframe(
             f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram&v={st.session_state.wokwi_session_token}",
@@ -775,7 +953,6 @@ def render_ambiente_1():
         )
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Floating Character Layer over Wokwi Stage
         if st.session_state.current_cutout:
             st.markdown(f"""
             <div class="hologram-overlay-container">
@@ -783,7 +960,6 @@ def render_ambiente_1():
             </div>
             """, unsafe_allow_html=True)
 
-        # Active Chapter Story Card
         if st.session_state.story_chapters:
             latest = st.session_state.story_chapters[-1]
             st.markdown(f"""
@@ -873,7 +1049,7 @@ def render_ambiente_2():
 
         t_data = st.session_state.latest_telemetry
         st.markdown(f"""
-        <div style="background: rgba(18, 14, 40, 0.8); border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 16px;">
+        <div id="target-telemetry-box" style="background: rgba(18, 14, 40, 0.8); border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 16px;">
           <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
             <span style="font-weight:700; color:#38bdf8;">📡 DISPOSITIVO: {t_data.get('origen')}</span>
             <span style="color:#94a3b8; font-size:0.85rem;">Hora: {t_data.get('hora')}</span>
@@ -905,201 +1081,6 @@ if "Ambiente 1" in view_mode:
 elif "Ambiente 2" in view_mode:
     render_ambiente_2()
 else:
-    # VISTA DUAL: AMBOS AMBIENTES SIMULTÁNEAMENTE
     render_ambiente_1()
     st.markdown("---")
     render_ambiente_2()
-
-# ---------------------------------------------------------
-# Stardust Particle Trail & Full-Box Spotlight Bridge
-# ---------------------------------------------------------
-components.html("""
-<script>
-(function() {
-    var pDoc = window.parent.document;
-    if (!pDoc) return;
-
-    var canvas = pDoc.getElementById('companion-trail-canvas');
-    if (!canvas) {
-        canvas = pDoc.createElement('canvas');
-        canvas.id = 'companion-trail-canvas';
-        canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999999;';
-        pDoc.body.appendChild(canvas);
-    }
-    var ctx = canvas.getContext('2d');
-
-    function resizeCanvas() {
-        canvas.width = window.parent.innerWidth;
-        canvas.height = window.parent.innerHeight;
-    }
-    resizeCanvas();
-    window.parent.addEventListener('resize', resizeCanvas);
-
-    var particles = [];
-    var isHovering = false;
-    var currentSource = null;
-    var currentTarget = null;
-    var currentColor = '#38bdf8';
-    var animFrameId = null;
-
-    function getTargetElement(key) {
-        if (key === 'canvas') {
-            return pDoc.querySelector('iframe[title="canvas_component.air_canvas"]') || 
-                   pDoc.querySelector('[data-testid="stCustomComponentV1"]') ||
-                   pDoc.querySelector('[data-testid="stColumn"]:first-child');
-        }
-        if (key === 'stage') {
-            return pDoc.getElementById('target-stage-box') || pDoc.querySelector('.stage-box');
-        }
-        if (key === 'story') {
-            return pDoc.getElementById('target-story-box') || pDoc.querySelector('.story-card');
-        }
-        return null;
-    }
-
-    function spawnParticles() {
-        if (!isHovering || !currentSource || !currentTarget) return;
-
-        var rectA = currentSource.getBoundingClientRect();
-        var rectB = currentTarget.getBoundingClientRect();
-
-        var x0 = rectA.left;
-        var y0 = rectA.top + rectA.height / 2;
-
-        var x1 = rectB.right;
-        var y1 = rectB.top + rectB.height / 2;
-
-        var cx = (x0 + x1) / 2;
-        var cy = Math.min(y0, y1) - 80;
-
-        for (var i = 0; i < 3; i++) {
-            particles.push({
-                x0: x0,
-                y0: y0,
-                x1: x1,
-                y1: y1,
-                cx: cx,
-                cy: cy,
-                t: 0,
-                speed: 0.02 + Math.random() * 0.02,
-                size: 2.2 + Math.random() * 3.5,
-                wobble: (Math.random() - 0.5) * 16,
-                color: currentColor,
-                alpha: 1
-            });
-        }
-    }
-
-    function renderLoop() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        spawnParticles();
-
-        if (isHovering && currentTarget) {
-            var r = currentTarget.getBoundingClientRect();
-            var pad = 6;
-            var bx = r.left - pad;
-            var by = r.top - pad;
-            var bw = r.width + pad * 2;
-            var bh = r.height + pad * 2;
-
-            ctx.save();
-            ctx.strokeStyle = currentColor;
-            ctx.lineWidth = 3;
-            ctx.shadowColor = currentColor;
-            ctx.shadowBlur = 24;
-
-            ctx.beginPath();
-            ctx.roundRect ? ctx.roundRect(bx, by, bw, bh, 14) : ctx.strokeRect(bx, by, bw, bh);
-            ctx.stroke();
-
-            var len = 20;
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(bx, by + len); ctx.lineTo(bx, by); ctx.lineTo(bx + len, by);
-            ctx.moveTo(bx + bw - len, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + len);
-            ctx.moveTo(bx, by + bh - len); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + len, by + bh);
-            ctx.moveTo(bx + bw - len, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - len);
-            ctx.stroke();
-            ctx.restore();
-        }
-
-        for (var j = particles.length - 1; j >= 0; j--) {
-            var p = particles[j];
-            p.t += p.speed;
-
-            if (p.t >= 1) {
-                particles.splice(j, 1);
-                continue;
-            }
-
-            var invT = 1 - p.t;
-            var curX = invT * invT * p.x0 + 2 * invT * p.t * p.cx + p.t * p.t * p.x1;
-            var curY = invT * invT * p.y0 + 2 * invT * p.t * p.cy + p.t * p.t * p.y1;
-
-            curY += Math.sin(p.t * Math.PI * 4) * p.wobble;
-
-            var alpha = p.t < 0.2 ? p.t / 0.2 : (1 - p.t);
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(curX, curY, p.size * (1 - p.t * 0.4), 0, 2 * Math.PI);
-            ctx.fillStyle = p.color;
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 12;
-            ctx.globalAlpha = alpha;
-            ctx.fill();
-            ctx.restore();
-        }
-
-        if (particles.length > 0 || isHovering) {
-            animFrameId = requestAnimationFrame(renderLoop);
-        } else {
-            animFrameId = null;
-        }
-    }
-
-    function startAnimation() {
-        if (!animFrameId) {
-            animFrameId = requestAnimationFrame(renderLoop);
-        }
-    }
-
-    function bindCompanionTriggers() {
-        var links = pDoc.querySelectorAll('.companion-link');
-        links.forEach(function(link) {
-            if (link.dataset.bound) return;
-            link.dataset.bound = "true";
-
-            link.addEventListener('mouseenter', function() {
-                var targetKey = link.getAttribute('data-target');
-                var color = link.getAttribute('data-color') || '#38bdf8';
-                var targetEl = getTargetElement(targetKey);
-
-                if (targetEl) {
-                    isHovering = true;
-                    currentSource = link;
-                    currentTarget = targetEl;
-                    currentColor = color;
-
-                    targetEl.style.setProperty('--highlight-color', color);
-                    targetEl.classList.add('companion-target-highlight');
-
-                    startAnimation();
-                }
-            });
-
-            link.addEventListener('mouseleave', function() {
-                isHovering = false;
-                if (currentTarget) {
-                    currentTarget.classList.remove('companion-target-highlight');
-                }
-                currentTarget = null;
-                currentSource = null;
-            });
-        });
-    }
-
-    setInterval(bindCompanionTriggers, 800);
-})();
-</script>
-""", height=0)
