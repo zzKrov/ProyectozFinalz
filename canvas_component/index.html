@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0f1117;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #stage {
+      position: relative;
+      width: 640px;
+      height: 480px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    video { display: none; }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 640px;
+      height: 480px;
+    }
+    #cameraCanvas { z-index: 1; transform: scaleX(-1); }
+    #drawCanvas { z-index: 2; }
+    .toolbar {
+      margin-top: 14px;
+      display: flex;
+      gap: 12px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-clear { background: #e74c3c; color: white; }
+    .btn-send { background: #00d26a; color: white; }
+    button:hover { opacity: 0.85; transform: scale(1.02); }
+    #badge {
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #f1c40f;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <video id="webcam" playsinline></video>
+    <canvas id="cameraCanvas" width="640" height="480"></canvas>
+    <canvas id="drawCanvas" width="640" height="480"></canvas>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn-clear" onclick="clearCanvas()">🗑️ Limpiar Pizarra</button>
+    <button class="btn-send" onclick="sendToStreamlit()">✨ Enviar Dibujo a OpenAI</button>
+  </div>
+  <div id="badge">Cargando MediaPipe Hands...</div>
+
+  <script>
+    const video = document.getElementById('webcam');
+    const camCanvas = document.getElementById('cameraCanvas');
+    const camCtx = camCanvas.getContext('2d');
+    const drawCanvas = document.getElementById('drawCanvas');
+    const dCtx = drawCanvas.getContext('2d');
+    const badge = document.getElementById('badge');
+
+    let prevPoint = null;
+
+    // Notify Streamlit iframe size
+    function notifyStreamlit(value) {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: 'streamlit:setComponentValue',
+        value: value
+      }, '*');
+    }
+
+    function clearCanvas() {
+      dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      badge.innerText = "Lienzo limpio.";
+    }
+
+    function sendToStreamlit() {
+      // Create white background image for OpenAI Vision
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = 640;
+      exportCanvas.height = 480;
+      const expCtx = exportCanvas.getContext('2d');
+      expCtx.fillStyle = '#FFFFFF';
+      expCtx.fillRect(0, 0, 640, 480);
+      expCtx.drawImage(drawCanvas, 0, 0);
+
+      const base64Png = exportCanvas.toDataURL('image/png');
+      notifyStreamlit(base64Png);
+      badge.innerText = "✅ Dibujo enviado al servidor!";
+      badge.style.color = "#00d26a";
+    }
+
+    function onResults(results) {
+      camCtx.save();
+      camCtx.clearRect(0, 0, camCanvas.width, camCanvas.height);
+      camCtx.drawImage(results.image, 0, 0, camCanvas.width, camCanvas.height);
+      camCtx.restore();
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const hand = results.multiHandLandmarks[0];
+        
+        // Landmark 4: Thumb Tip | Landmark 8: Index Tip
+        const thumb = hand[4];
+        const index = hand[8];
+
+        // Mirror coordinates for natural mirror interaction
+        const x = (1.0 - (thumb.x + index.x) / 2) * drawCanvas.width;
+        const y = ((thumb.y + index.y) / 2) * drawCanvas.height;
+
+        // Euclidean distance between Thumb and Index
+        const dx = thumb.x - index.x;
+        const dy = thumb.y - index.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        const isPinching = distance < 0.065; // Pinch threshold
+
+        if (isPinching) {
+          badge.innerText = "✍️ DIBUJANDO (Pellizco activo)";
+          badge.style.color = "#00d26a";
+
+          if (prevPoint) {
+            dCtx.strokeStyle = '#00f2fe';
+            dCtx.shadowColor = '#00f2fe';
+            dCtx.shadowBlur = 8;
+            dCtx.lineWidth = 6;
+            dCtx.lineCap = 'round';
+            dCtx.beginPath();
+            dCtx.moveTo(prevPoint.x, prevPoint.y);
+            dCtx.lineTo(x, y);
+            dCtx.stroke();
+          }
+          prevPoint = { x, y };
+        } else {
+          badge.innerText = "✋ Mano detectada (Junta índice y pulgar para pintar)";
+          badge.style.color = "#f1c40f";
+          prevPoint = null;
+        }
+      } else {
+        badge.innerText = "Pon tu mano frente a la cámara...";
+        badge.style.color = "#888";
+        prevPoint = null;
+      }
+    }
+
+    const hands = new Hands({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.65,
+      minTrackingConfidence: 0.65
+    });
+    hands.onResults(onResults);
+
+    const camera = new Camera(video, {
+      onFrame: async () => { await hands.send({ image: video }); },
+      width: 640,
+      height: 480
+    });
+    camera.start();
+
+    // Auto-adjust Streamlit frame height
+    window.addEventListener("load", () => {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: 'streamlit:setFrameHeight',
+        height: 560
+      }, '*');
+    });
+  </script>
+</body>
+</html>
