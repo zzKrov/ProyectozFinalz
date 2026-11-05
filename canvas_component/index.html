@@ -79,6 +79,11 @@
       filter: brightness(1.15); 
       transform: translateY(-2px) scale(1.02); 
     }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
     #status {
       margin-top: 8px;
       font-size: 12.5px;
@@ -132,6 +137,7 @@
     let handsDetector = null;
     let isRunning = false;
     let isProcessing = false;
+    let lastInferenceTime = 0;
 
     try {
       handsDetector = new Hands({
@@ -140,8 +146,8 @@
       handsDetector.setOptions({
         maxNumHands: 1,
         modelComplexity: 1,
-        minDetectionConfidence: 0.6,
-        minTrackingConfidence: 0.6
+        minDetectionConfidence: 0.65,
+        minTrackingConfidence: 0.65
       });
       handsDetector.onResults(onResults);
     } catch (e) {}
@@ -173,10 +179,14 @@
       }
     }
 
+    // High-performance decoupled loop: 60fps canvas, 30fps AI
     async function renderLoop() {
       if (!isRunning) return;
-      if (!isProcessing && video.readyState >= 2 && !video.paused) {
+
+      const now = performance.now();
+      if (!isProcessing && video.readyState >= 2 && !video.paused && (now - lastInferenceTime >= 32)) {
         isProcessing = true;
+        lastInferenceTime = now;
         try {
           if (handsDetector) await handsDetector.send({ image: video });
         } catch (e) {}
@@ -195,8 +205,8 @@
       let minX = w, minY = h, maxX = 0, maxY = 0;
       let hasPixels = false;
 
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y += 2) { // 2x stride for instant bounding box computation
+        for (let x = 0; x < w; x += 2) {
           if (data[(y * w + x) * 4 + 3] > 30) {
             hasPixels = true;
             if (x < minX) minX = x;
@@ -222,18 +232,29 @@
         return;
       }
 
+      sendBtn.disabled = true;
+      sendBtn.innerText = "⏳ Enviando...";
+      statusDiv.innerText = "✨ Enviando trazo al narrador...";
+
+      // 1. Transparent Cutout for Screen Hologram
       const cCanvas = document.createElement('canvas');
       cCanvas.width = box.w; cCanvas.height = box.h;
       cCanvas.getContext('2d').drawImage(paintCanvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
       const cutoutBase64 = cCanvas.toDataURL('image/png');
 
+      // 2. High-speed, Downscaled Compressed JPEG for OpenAI Vision (25x smaller payload)
+      const maxDim = 320;
+      const scale = Math.min(1.0, maxDim / Math.max(box.w, box.h));
+      const targetW = Math.round(box.w * scale);
+      const targetH = Math.round(box.h * scale);
+
       const vCanvas = document.createElement('canvas');
-      vCanvas.width = box.w; vCanvas.height = box.h;
+      vCanvas.width = targetW; vCanvas.height = targetH;
       const vCtx = vCanvas.getContext('2d');
       vCtx.fillStyle = '#FFFFFF';
-      vCtx.fillRect(0, 0, box.w, box.h);
-      vCtx.drawImage(cCanvas, 0, 0);
-      const visionBase64 = vCanvas.toDataURL('image/png');
+      vCtx.fillRect(0, 0, targetW, targetH);
+      vCtx.drawImage(cCanvas, 0, 0, targetW, targetH);
+      const visionBase64 = vCanvas.toDataURL('image/jpeg', 0.82);
 
       sendStreamlitMsg("streamlit:setComponentValue", {
         value: JSON.stringify({
@@ -243,7 +264,11 @@
         })
       });
 
-      statusDiv.innerText = "✨ ¡Tejiendo capítulo en el escenario! Mira a la derecha...";
+      setTimeout(() => {
+        sendBtn.disabled = false;
+        sendBtn.innerText = "✨ Tejer en la historia";
+        statusDiv.innerText = "✨ ¡Trazo recibido! Preparando la escena...";
+      }, 2500);
     }
 
     function onResults(results) {
@@ -263,6 +288,7 @@
         const y = ((thumb.y + index.y) / 2) * paintCanvas.height;
         const isPinching = Math.hypot(thumb.x - index.x, thumb.y - index.y) < 0.07;
 
+        // Glowing Pointer Reticle
         curCtx.beginPath();
         curCtx.arc(x, y, isPinching ? 7 : 9, 0, 2 * Math.PI);
         curCtx.fillStyle = isPinching ? "#38bdf8" : "rgba(192, 132, 252, 0.6)";
