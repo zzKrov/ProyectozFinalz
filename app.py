@@ -84,7 +84,7 @@ slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2:
 slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en vivo — Música en zumbador, OLED activa y luces encendidas (1.png)")
 
 # ---------------------------------------------------------
-# Luminous Theme & Pure CSS Drawer (Flush-Left HTML)
+# Luminous Theme & Pure CSS Drawer
 # ---------------------------------------------------------
 magical_theme = f"""
 <style>
@@ -151,26 +151,6 @@ html, body, [data-testid="stAppViewContainer"] {{
     margin-top: 2px;
 }}
 
-/* Dynamic Highlight Glow Classes */
-.companion-box-highlight {{
-    outline: 4px solid var(--highlight-color, #38bdf8) !important;
-    box-shadow: 0 0 55px var(--highlight-color, #38bdf8), 0 0 90px rgba(192, 132, 252, 0.4) !important;
-    transform: scale(1.012) !important;
-    border-radius: 16px !important;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    z-index: 50 !important;
-}}
-
-/* Temporary Telemetry Reveal Animation */
-.temp-telemetry-reveal {{
-    display: block !important;
-    animation: slideDownFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}}
-@keyframes slideDownFade {{
-    from {{ opacity: 0; transform: translateY(-20px); }}
-    to {{ opacity: 1; transform: translateY(0); }}
-}}
-
 /* Real Container Target Selectors */
 div:has(> iframe[title*="air_canvas"]),
 [data-testid="element-container"]:has(iframe[title*="air_canvas"]) {{
@@ -187,6 +167,15 @@ div:has(> iframe[src*="wokwi.com"]),
     border: 1px solid rgba(192, 132, 252, 0.35) !important;
     box-shadow: 0 0 30px rgba(112, 0, 255, 0.2) !important;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}}
+
+/* Telemetry Slide Animation */
+.telemetry-slide-reveal {{
+    animation: slideDownFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}}
+@keyframes slideDownFade {{
+    from {{ opacity: 0; transform: translateY(-25px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
 }}
 
 .story-card {{
@@ -340,7 +329,7 @@ div.stButton > button {{
     box-sizing: border-box;
 }}
 
-/* Transparent backdrop: No blur to keep the site crystal clear */
+/* Clean, transparent backdrop with zero blur to keep site razor-sharp */
 .drawer-backdrop {{
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -493,20 +482,20 @@ div.stButton > button {{
 </ul>
 <div class="drawer-section-title">⚙️ ¿Cómo funciona?</div>
 <ol style="padding-left:18px;margin-top:4px;">
-<li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan hl-canvas" data-target="canvas" data-color="#38bdf8">🔍 Resaltar Lienzo de Dibujo</span></li>
+<li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan" data-target="canvas" data-color="#38bdf8">🔍 Resaltar Lienzo de Dibujo</span></li>
 {slot_img_4}
-<li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple hl-story" data-target="story" data-color="#c084fc">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
+<li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple" data-target="story" data-color="#c084fc">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
 {slot_img_3}
 <li style="margin-bottom:10px;"><b>El escenario cobra vida:</b><ul style="padding-left:16px;margin-top:4px;"><li>En tu pantalla, tu dibujo aparece recortado flotando y bailando sobre el escenario.</li><li>Por internet (vía MQTT), la placa ESP32 en Wokwi recibe la orden: abre los telones, enciende las luces del color del cuento, eleva al personaje y toca la melodía con su zumbador como una cajita de música.</li></ul></li>
-<li style="margin-bottom:10px;"><b>Telemetría de retorno bidireccional:</b> Al iniciar y finalizar cada acto, el ESP32 transmite de vuelta a Streamlit su estado físico, confirmando que la orden fue ejecutada en el circuito.<br><span class="companion-link cyan hl-telemetry" data-target="telemetry" data-color="#38bdf8">📡 Resaltar Monitor de Telemetría</span></li>
+<li style="margin-bottom:10px;"><b>Telemetría de retorno bidireccional:</b> Al iniciar y finalizar cada acto, el ESP32 transmite de vuelta a Streamlit su estado físico, confirmando que la orden fue ejecutada en el circuito.<br><span class="companion-link cyan" data-target="telemetry" data-color="#38bdf8">📡 Resaltar Monitor de Telemetría</span></li>
 </ol>
 <div class="drawer-section-title">🦾 ¿Qué hace cada servomotor exactamente?</div>
 <p>A continuación se observa el estado de reposo del teatro antes de que se inicie la obra:</p>
 {slot_img_2}
 <ul style="padding-left:18px;margin-top:4px;">
-<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red hl-curtains" data-target="stage" data-color="#f43f5e">🎭 Resaltar Telones en Escenario</span></li>
-<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold hl-prop" data-target="stage" data-color="#fbbf24">🚀 Resaltar Elevador Mecánico</span></li>
-<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan hl-wind" data-target="stage" data-color="#38bdf8">🌪️ Resaltar Máquina de Viento</span></li>
+<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red" data-target="curtains" data-color="#f43f5e">🎭 Resaltar Telones en Escenario</span></li>
+<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold" data-target="prop" data-color="#fbbf24">🚀 Resaltar Elevador Mecánico</span></li>
+<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan" data-target="wind" data-color="#38bdf8">🌪️ Resaltar Máquina de Viento</span></li>
 </ul>
 <div class="drawer-section-title">💡 El resto del hardware en acción:</div>
 {slot_img_1}
@@ -744,6 +733,7 @@ def render_ambiente_1():
                     clean_json = match.group(0) if match else raw_content.strip()
                     chapter_data = json.loads(clean_json)
 
+                    # High-Fidelity Voice Synthesis
                     story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
                     tts = client.audio.speech.create(
                         model="tts-1-hd",
@@ -950,7 +940,7 @@ def render_ambiente_2():
 # =========================================================================
 # ROUTING & DUAL VIEW ENGINE
 # =========================================================================
-st.markdown('<div id="ambient-1-container">', unsafe_allow_html=True)
+st.markdown('<div id="ambience-1-wrapper">', unsafe_allow_html=True)
 if "Ambiente 1" in view_mode or "Dual" in view_mode:
     render_ambiente_1()
 st.markdown('</div>', unsafe_allow_html=True)
@@ -958,23 +948,24 @@ st.markdown('</div>', unsafe_allow_html=True)
 if "Dual" in view_mode:
     st.markdown("---")
 
-st.markdown('<div id="ambient-2-container">', unsafe_allow_html=True)
-if "Ambiente 2" in view_mode or "Dual" in view_mode:
-    render_ambiente_2()
+amb2_display = "block" if ("Ambiente 2" in view_mode or "Dual" in view_mode) else "none"
+st.markdown(f'<div id="ambience-2-wrapper" style="display:{amb2_display};">', unsafe_allow_html=True)
+render_ambiente_2()
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Encoded Safe Companion Engine (Auto-Scroll & Particles)
+# Companion Engine (Encoded Payload: Auto-Scroll & Particles)
 # ---------------------------------------------------------
 companion_js_code = """
 (function() {
     var doc = document;
+    if (!doc || !doc.body) return;
 
     var canvas = doc.getElementById('companion-trail-canvas');
     if (!canvas) {
         canvas = doc.createElement('canvas');
         canvas.id = 'companion-trail-canvas';
-        canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999999;';
+        canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:10000001;';
         doc.body.appendChild(canvas);
     }
     var ctx = canvas.getContext('2d');
@@ -992,23 +983,23 @@ companion_js_code = """
     var currentTarget = null;
     var currentColor = '#38bdf8';
     var animId = null;
-    var telemetryTemporarilyRevealed = false;
+    var tempTelemetryTimer = null;
 
     function getTarget(key) {
         if (key === 'canvas') {
-            return doc.querySelector('div:has(> iframe[title*="air_canvas"])') || 
+            return doc.querySelector('div:has(> iframe[title*="air_canvas"])') ||
                    doc.querySelector('[data-testid="element-container"]:has(iframe[title*="air_canvas"])') ||
                    doc.querySelector('[data-testid="stColumn"]:first-child');
         }
-        if (key === 'stage') {
-            return doc.querySelector('div:has(> iframe[src*="wokwi.com"])') || 
+        if (key === 'stage' || key === 'curtains' || key === 'prop' || key === 'wind') {
+            return doc.querySelector('div:has(> iframe[src*="wokwi.com"])') ||
                    doc.querySelector('[data-testid="element-container"]:has(iframe[src*="wokwi.com"])');
         }
         if (key === 'story') {
             return doc.querySelector('.story-card');
         }
         if (key === 'telemetry') {
-            return doc.getElementById('target-telemetry-box') || doc.querySelector('#ambient-2-container');
+            return doc.getElementById('target-telemetry-box') || doc.querySelector('#ambience-2-wrapper');
         }
         return null;
     }
@@ -1021,30 +1012,64 @@ companion_js_code = """
     function spawnParticles() {
         if (!isHovering || !currentSource || !currentTarget) return;
 
-        var rA = currentSource.getBoundingClientRect();
-        var rB = currentTarget.getBoundingClientRect();
+        var rectA = currentSource.getBoundingClientRect();
+        var rectB = currentTarget.getBoundingClientRect();
 
-        var x0 = rA.left;
-        var y0 = rA.top + rA.height / 2;
-        var x1 = rB.right;
-        var y1 = rB.top + rB.height / 2;
+        var x0 = rectA.left;
+        var y0 = rectA.top + rectA.height / 2;
+
+        var x1 = rectB.right;
+        var y1 = rectB.top + rectB.height / 2;
+
         var cx = (x0 + x1) / 2;
         var cy = Math.min(y0, y1) - 60;
 
         for (var i = 0; i < 3; i++) {
             particles.push({
-                x0: x0, y0: y0, x1: x1, y1: y1, cx: cx, cy: cy,
-                t: 0, speed: 0.02 + Math.random() * 0.02,
-                size: 2.2 + Math.random() * 3.5,
-                wobble: (Math.random() - 0.5) * 16,
+                x0: x0, y0: y0, x1: x1, y1: y1,
+                cx: cx, cy: cy,
+                t: 0,
+                speed: 0.024 + Math.random() * 0.02,
+                size: 2.2 + Math.random() * 3.2,
+                wobble: (Math.random() - 0.5) * 14,
                 color: currentColor
             });
         }
     }
 
-    function loop() {
+    function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         spawnParticles();
+
+        if (isHovering && currentTarget) {
+            var r = currentTarget.getBoundingClientRect();
+            var p = 6;
+            var bx = r.left - p, by = r.top - p, bw = r.width + p * 2, bh = r.height + p * 2;
+
+            ctx.save();
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = 3.5;
+            ctx.shadowColor = currentColor;
+            ctx.shadowBlur = 24;
+
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(bx, by, bw, bh, 14);
+                ctx.stroke();
+            } else {
+                ctx.strokeRect(bx, by, bw, bh);
+            }
+
+            var len = 22;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(bx, by + len); ctx.lineTo(bx, by); ctx.lineTo(bx + len, by);
+            ctx.moveTo(bx + bw - len, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + len);
+            ctx.moveTo(bx, by + bh - len); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + len, by + bh);
+            ctx.moveTo(bx + bw - len, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - len);
+            ctx.stroke();
+            ctx.restore();
+        }
 
         for (var j = particles.length - 1; j >= 0; j--) {
             var pt = particles[j];
@@ -1059,7 +1084,7 @@ companion_js_code = """
             var alpha = pt.t < 0.2 ? pt.t / 0.2 : (1 - pt.t);
             ctx.save();
             ctx.beginPath();
-            ctx.arc(curX, curY, pt.size * (1 - pt.t * 0.4), 0, 2 * Math.PI);
+            ctx.arc(curX, curY, pt.size * (1 - pt.t * 0.35), 0, 2 * Math.PI);
             ctx.fillStyle = pt.color;
             ctx.shadowColor = pt.color;
             ctx.shadowBlur = 12;
@@ -1069,10 +1094,14 @@ companion_js_code = """
         }
 
         if (particles.length > 0 || isHovering) {
-            animId = requestAnimationFrame(loop);
+            animId = requestAnimationFrame(render);
         } else {
             animId = null;
         }
+    }
+
+    function startAnimation() {
+        if (!animId) animId = requestAnimationFrame(render);
     }
 
     function bind() {
@@ -1085,12 +1114,12 @@ companion_js_code = """
                 var targetKey = l.getAttribute('data-target');
                 var color = l.getAttribute('data-color') || '#38bdf8';
 
-                // If hovering telemetry and ambient 2 is hidden, reveal it!
                 if (targetKey === 'telemetry') {
-                    var amb2 = doc.getElementById('ambient-2-container');
-                    if (amb2 && amb2.offsetHeight === 0) {
-                        amb2.classList.add('temp-telemetry-reveal');
-                        telemetryTemporarilyRevealed = true;
+                    if (tempTelemetryTimer) clearTimeout(tempTelemetryTimer);
+                    var amb2 = doc.getElementById('ambience-2-wrapper');
+                    if (amb2 && (amb2.style.display === 'none' || getComputedStyle(amb2).display === 'none')) {
+                        amb2.style.display = 'block';
+                        amb2.classList.add('telemetry-slide-reveal');
                     }
                 }
 
@@ -1102,30 +1131,34 @@ companion_js_code = """
                     currentColor = color;
 
                     scrollToElement(targetEl);
-
-                    targetEl.style.setProperty('--highlight-color', color);
-                    targetEl.classList.add('companion-box-highlight');
-                    if (!animId) animId = requestAnimationFrame(loop);
+                    startAnimation();
                 }
             });
 
             l.addEventListener('mouseleave', function() {
                 isHovering = false;
-                if (currentTarget) currentTarget.classList.remove('companion-box-highlight');
                 currentTarget = null;
                 currentSource = null;
 
-                if (telemetryTemporarilyRevealed) {
-                    var amb2 = doc.getElementById('ambient-2-container');
-                    if (amb2) amb2.classList.remove('temp-telemetry-reveal');
-                    telemetryTemporarilyRevealed = false;
+                var targetKey = l.getAttribute('data-target');
+                if (targetKey === 'telemetry') {
+                    tempTelemetryTimer = setTimeout(function() {
+                        var amb2 = doc.getElementById('ambience-2-wrapper');
+                        var radio = doc.querySelector('[data-testid="stRadio"] input[type="radio"]:checked');
+                        var radioLabel = radio ? (radio.closest('label') || {}).innerText || '' : '';
+                        if (amb2 && radioLabel.indexOf('Ambiente 2') === -1 && radioLabel.indexOf('Dual') === -1) {
+                            amb2.style.display = 'none';
+                            amb2.classList.remove('telemetry-slide-reveal');
+                        }
+                    }, 1400);
                 }
             });
         });
     }
+
     setInterval(bind, 800);
 })();
 """
 
 encoded_js = base64.b64encode(companion_js_code.encode("utf-8")).decode("ascii")
-st.markdown(f"""<svg style="display:none;" onload="try{{eval(atob('{encoded_js}'))}}catch(e){{console.error(e)}}"></svg>""", unsafe_allow_html=True)
+st.markdown(f"""<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="display:none;" onload="eval(atob('{encoded_js}'))" />""", unsafe_allow_html=True)
