@@ -84,13 +84,12 @@ slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2:
 slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en vivo — Música en zumbador, OLED activa y luces encendidas (1.png)")
 
 # ---------------------------------------------------------
-# Luminous Theme & Full-Box CSS Highlighting + Smooth Scroll
+# Luminous Theme & Pure CSS Drawer (Flush-Left HTML)
 # ---------------------------------------------------------
 magical_theme = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&display=swap');
 
-/* Smooth Scrolling across entire application */
 html, body, [data-testid="stAppViewContainer"], .main, .drawer-content {{
     scroll-behavior: smooth !important;
 }}
@@ -152,7 +151,27 @@ html, body, [data-testid="stAppViewContainer"] {{
     margin-top: 2px;
 }}
 
-/* Base Styling for Real Full-Height Containers */
+/* Dynamic Highlight Glow Classes */
+.companion-box-highlight {{
+    outline: 4px solid var(--highlight-color, #38bdf8) !important;
+    box-shadow: 0 0 55px var(--highlight-color, #38bdf8), 0 0 90px rgba(192, 132, 252, 0.4) !important;
+    transform: scale(1.012) !important;
+    border-radius: 16px !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 50 !important;
+}}
+
+/* Temporary Telemetry Reveal Animation */
+.temp-telemetry-reveal {{
+    display: block !important;
+    animation: slideDownFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}}
+@keyframes slideDownFade {{
+    from {{ opacity: 0; transform: translateY(-20px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
+}}
+
+/* Real Container Target Selectors */
 div:has(> iframe[title*="air_canvas"]),
 [data-testid="element-container"]:has(iframe[title*="air_canvas"]) {{
     position: relative !important;
@@ -170,123 +189,6 @@ div:has(> iframe[src*="wokwi.com"]),
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }}
 
-/* ------------------------------------------------------------- */
-/* PURE CSS FULL-BOX HIGHLIGHTING (NO 0px THIN BARS)             */
-/* ------------------------------------------------------------- */
-
-/* 1. Full Canvas Highlighting */
-body:has(.hl-canvas:hover) div:has(> iframe[title*="air_canvas"]),
-body:has(.hl-canvas:hover) [data-testid="element-container"]:has(iframe[title*="air_canvas"]) {{
-    outline: 4px solid #38bdf8 !important;
-    box-shadow: 0 0 50px rgba(56, 189, 248, 0.85), 0 0 90px rgba(192, 132, 252, 0.5) !important;
-    transform: scale(1.012) !important;
-    z-index: 50 !important;
-}}
-body:has(.hl-canvas:hover) div:has(> iframe[title*="air_canvas"])::before {{
-    content: "🪞 Lienzo Gestual (MediaPipe) Enfocado";
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    background: rgba(56, 189, 248, 0.95);
-    color: #031c26;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    z-index: 1000;
-    box-shadow: 0 0 20px #38bdf8;
-    pointer-events: none;
-}}
-
-/* 2. Full Stage - Curtains Highlighting */
-body:has(.hl-curtains:hover) div:has(> iframe[src*="wokwi.com"]),
-body:has(.hl-curtains:hover) [data-testid="element-container"]:has(iframe[src*="wokwi.com"]) {{
-    outline: 4px solid #f43f5e !important;
-    box-shadow: 0 0 55px rgba(244, 63, 94, 0.9), 0 0 90px rgba(244, 63, 94, 0.5) !important;
-    transform: scale(1.012) !important;
-    z-index: 50 !important;
-}}
-body:has(.hl-curtains:hover) div:has(> iframe[src*="wokwi.com"])::before {{
-    content: "🎭 Telones Izq (13) & Der (25) Enfocados";
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    background: rgba(244, 63, 94, 0.95);
-    color: #ffffff;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    z-index: 1000;
-    box-shadow: 0 0 20px #f43f5e;
-    pointer-events: none;
-}}
-
-/* 3. Full Stage - Prop Elevator Highlighting */
-body:has(.hl-prop:hover) div:has(> iframe[src*="wokwi.com"]),
-body:has(.hl-prop:hover) [data-testid="element-container"]:has(iframe[src*="wokwi.com"]) {{
-    outline: 4px solid #fbbf24 !important;
-    box-shadow: 0 0 55px rgba(251, 191, 36, 0.9), 0 0 90px rgba(251, 191, 36, 0.5) !important;
-    transform: scale(1.012) !important;
-    z-index: 50 !important;
-}}
-body:has(.hl-prop:hover) div:has(> iframe[src*="wokwi.com"])::before {{
-    content: "🚀 Elevador de Atrezo (Pin 14) Enfocado";
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    background: rgba(251, 191, 36, 0.95);
-    color: #171100;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    z-index: 1000;
-    box-shadow: 0 0 20px #fbbf24;
-    pointer-events: none;
-}}
-
-/* 4. Full Stage - Wind Machine Highlighting */
-body:has(.hl-wind:hover) div:has(> iframe[src*="wokwi.com"]),
-body:has(.hl-wind:hover) [data-testid="element-container"]:has(iframe[src*="wokwi.com"]) {{
-    outline: 4px solid #38bdf8 !important;
-    box-shadow: 0 0 55px rgba(56, 189, 248, 0.85), 0 0 90px rgba(56, 189, 248, 0.5) !important;
-    transform: scale(1.012) !important;
-    z-index: 50 !important;
-}}
-body:has(.hl-wind:hover) div:has(> iframe[src*="wokwi.com"])::before {{
-    content: "🌪️ Máquina de Viento (Pin 27) Enfocada";
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    background: rgba(56, 189, 248, 0.95);
-    color: #031c26;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    z-index: 1000;
-    box-shadow: 0 0 20px #38bdf8;
-    pointer-events: none;
-}}
-
-/* 5. Full Story Card Highlighting */
-body:has(.hl-story:hover) .story-card {{
-    outline: 4px solid #c084fc !important;
-    box-shadow: 0 0 50px rgba(192, 132, 252, 0.9), 0 0 90px rgba(192, 132, 252, 0.5) !important;
-    transform: scale(1.012) !important;
-    z-index: 50 !important;
-}}
-
-/* 6. Telemetry Monitor Highlighting */
-body:has(.hl-telemetry:hover) #target-telemetry-box {{
-    outline: 4px solid #38bdf8 !important;
-    box-shadow: 0 0 50px rgba(56, 189, 248, 0.85) !important;
-    transform: scale(1.012) !important;
-    z-index: 50 !important;
-}}
-
-/* Story Card */
 .story-card {{
     background: rgba(26, 20, 56, 0.65);
     border: 1px solid rgba(192, 132, 252, 0.3);
@@ -438,10 +340,11 @@ div.stButton > button {{
     box-sizing: border-box;
 }}
 
+/* Transparent backdrop: No blur to keep the site crystal clear */
 .drawer-backdrop {{
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(5, 4, 13, 0.18) !important;
+    background: rgba(5, 4, 13, 0.12) !important;
     backdrop-filter: none !important;
     z-index: 9999999 !important;
     opacity: 0;
@@ -590,20 +493,20 @@ div.stButton > button {{
 </ul>
 <div class="drawer-section-title">⚙️ ¿Cómo funciona?</div>
 <ol style="padding-left:18px;margin-top:4px;">
-<li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan hl-canvas">🔍 Resaltar Lienzo de Dibujo</span></li>
+<li style="margin-bottom:10px;"><b>Dibujo en el aire:</b> La cámara web rastrea tu mano. Al juntar el pulgar y el índice (gesto de pinza), el sistema pinta una línea luminosa en pantalla.<br><span class="companion-link cyan hl-canvas" data-target="canvas" data-color="#38bdf8">🔍 Resaltar Lienzo de Dibujo</span></li>
 {slot_img_4}
-<li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple hl-story">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
+<li style="margin-bottom:10px;"><b>La IA interpreta y crea:</b><ul style="padding-left:16px;margin-top:4px;"><li>Reconoce la figura y escribe el siguiente capítulo del cuento (recordando los capítulos anteriores para que la historia tenga continuidad).</li><li>Narra la historia con voz en español usando entonación y pausas dramáticas (<span class="companion-link purple hl-story" data-target="story" data-color="#c084fc">tts-1-hd con voz modulada</span>).</li><li>Compone una melodía real (notas musicales afinadas y con ritmo, no ruido al azar).</li></ul></li>
 {slot_img_3}
 <li style="margin-bottom:10px;"><b>El escenario cobra vida:</b><ul style="padding-left:16px;margin-top:4px;"><li>En tu pantalla, tu dibujo aparece recortado flotando y bailando sobre el escenario.</li><li>Por internet (vía MQTT), la placa ESP32 en Wokwi recibe la orden: abre los telones, enciende las luces del color del cuento, eleva al personaje y toca la melodía con su zumbador como una cajita de música.</li></ul></li>
-<li style="margin-bottom:10px;"><b>Telemetría de retorno bidireccional:</b> Al iniciar y finalizar cada acto, el ESP32 transmite de vuelta a Streamlit su estado físico, confirmando que la orden fue ejecutada en el circuito.<br><span class="companion-link cyan hl-telemetry">📡 Resaltar Monitor de Telemetría</span></li>
+<li style="margin-bottom:10px;"><b>Telemetría de retorno bidireccional:</b> Al iniciar y finalizar cada acto, el ESP32 transmite de vuelta a Streamlit su estado físico, confirmando que la orden fue ejecutada en el circuito.<br><span class="companion-link cyan hl-telemetry" data-target="telemetry" data-color="#38bdf8">📡 Resaltar Monitor de Telemetría</span></li>
 </ol>
 <div class="drawer-section-title">🦾 ¿Qué hace cada servomotor exactamente?</div>
 <p>A continuación se observa el estado de reposo del teatro antes de que se inicie la obra:</p>
 {slot_img_2}
 <ul style="padding-left:18px;margin-top:4px;">
-<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red hl-curtains">🎭 Resaltar Telones en Escenario</span></li>
-<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold hl-prop">🚀 Resaltar Elevador Mecánico</span></li>
-<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan hl-wind">🌪️ Resaltar Máquina de Viento</span></li>
+<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red hl-curtains" data-target="stage" data-color="#f43f5e">🎭 Resaltar Telones en Escenario</span></li>
+<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold hl-prop" data-target="stage" data-color="#fbbf24">🚀 Resaltar Elevador Mecánico</span></li>
+<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan hl-wind" data-target="stage" data-color="#38bdf8">🌪️ Resaltar Máquina de Viento</span></li>
 </ul>
 <div class="drawer-section-title">💡 El resto del hardware en acción:</div>
 {slot_img_1}
@@ -612,7 +515,7 @@ div.stButton > button {{
 <li style="margin-bottom:6px;"><b>Pantalla OLED:</b> Muestra el título de la obra y el nombre de la partitura que está sonando.</li>
 <li style="margin-bottom:6px;"><b>Zumbador:</b> Toca la partitura que compuso la IA nota por nota a un volumen suave como cajita de música.</li>
 </ul>
-<div style="text-align:center;margin-top:25px;padding-top:15px;border-top:1px solid rgba(192,132,252,0.2);font-size:0.8rem;color:#94a3b8;">Pasa el mouse sobre los botones para resaltar cada componente y ver su etiqueta.</div>
+<div style="text-align:center;margin-top:25px;padding-top:15px;border-top:1px solid rgba(192,132,252,0.2);font-size:0.8rem;color:#94a3b8;">Pasa el mouse sobre los botones para auto-desplazar la página y trazar estelas luminosas.</div>
 </div>
 </div>
 """
@@ -773,12 +676,12 @@ def render_ambiente_1():
                     5. Bautiza la pieza musical con un título evocador (ej: "Danza del Viento", "Nana de la Luna", "Marcha de las Estrellas").
                     6. Carácter emocional breve (ej: "Lírico y Soñador", "Misterioso", "Jovial").
                     7. COMPÓN UNA MELODÍA ARMÓNICA Y REAL de 8 a 14 notas musicales.
-                   REGLA OBLIGATORIA DE FRECUENCIAS (Cajita de música cálida, tonos graves y medios, NUNCA chirridos agudos):
-                   - Usa EXCLUSIVAMENTE notas afinadas de la escala pentatónica:
-                     G3: 196 Hz | A3: 220 Hz | B3: 247 Hz | C4: 262 Hz | D4: 294 Hz | E4: 330 Hz | F4: 349 Hz | G4: 392 Hz | A4: 440 Hz | C5: 523 Hz
-                     (Usa 0 para silencios y pausas rítmicas indispensables).
-                   - Duraciones en ms: 180 (ligera), 280 (media), 450 (nota reposada final).
-                   - Concluye la melodía reposando en la tónica (C4: 262 o G3: 196).
+                       REGLA OBLIGATORIA DE FRECUENCIAS (Cajita de música cálida, tonos graves y medios, NUNCA chirridos agudos):
+                       - Usa EXCLUSIVAMENTE notas afinadas de la escala pentatónica:
+                         G3: 196 Hz | A3: 220 Hz | B3: 247 Hz | C4: 262 Hz | D4: 294 Hz | E4: 330 Hz | F4: 349 Hz | G4: 392 Hz | A4: 440 Hz | C5: 523 Hz
+                         (Usa 0 para silencios y pausas rítmicas indispensables).
+                       - Duraciones en ms: 180 (ligera), 280 (media), 450 (nota reposada final).
+                       - Concluye la melodía reposando en la tónica (C4: 262 o G3: 196).
 
                     8. Parámetros del escenario mecánico:
                        - sky_rgb: [R, G, B] color del cielo/arco superior.
@@ -841,7 +744,6 @@ def render_ambiente_1():
                     clean_json = match.group(0) if match else raw_content.strip()
                     chapter_data = json.loads(clean_json)
 
-                    # High-Fidelity Voice Synthesis
                     story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
                     tts = client.audio.speech.create(
                         model="tts-1-hd",
@@ -920,7 +822,6 @@ def render_ambiente_1():
 
         st.caption("💡 *Asegúrate de pulsar el botón verde ▶️ (Play) dentro de Wokwi para encender el escenario.*")
 
-        # Persistent Wokwi Stage Frame
         components.iframe(
             f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram&v={st.session_state.wokwi_session_token}",
             height=350
@@ -1047,13 +948,184 @@ def render_ambiente_2():
         """)
 
 # =========================================================================
-# ROUTING CONTROLLER
+# ROUTING & DUAL VIEW ENGINE
 # =========================================================================
-if "Ambiente 1" in view_mode:
+st.markdown('<div id="ambient-1-container">', unsafe_allow_html=True)
+if "Ambiente 1" in view_mode or "Dual" in view_mode:
     render_ambiente_1()
-elif "Ambiente 2" in view_mode:
-    render_ambiente_2()
-else:
-    render_ambiente_1()
+st.markdown('</div>', unsafe_allow_html=True)
+
+if "Dual" in view_mode:
     st.markdown("---")
+
+st.markdown('<div id="ambient-2-container">', unsafe_allow_html=True)
+if "Ambiente 2" in view_mode or "Dual" in view_mode:
     render_ambiente_2()
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# Encoded Safe Companion Engine (Auto-Scroll & Particles)
+# ---------------------------------------------------------
+companion_js_code = """
+(function() {
+    var doc = document;
+
+    var canvas = doc.getElementById('companion-trail-canvas');
+    if (!canvas) {
+        canvas = doc.createElement('canvas');
+        canvas.id = 'companion-trail-canvas';
+        canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999999;';
+        doc.body.appendChild(canvas);
+    }
+    var ctx = canvas.getContext('2d');
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    var particles = [];
+    var isHovering = false;
+    var currentSource = null;
+    var currentTarget = null;
+    var currentColor = '#38bdf8';
+    var animId = null;
+    var telemetryTemporarilyRevealed = false;
+
+    function getTarget(key) {
+        if (key === 'canvas') {
+            return doc.querySelector('div:has(> iframe[title*="air_canvas"])') || 
+                   doc.querySelector('[data-testid="element-container"]:has(iframe[title*="air_canvas"])') ||
+                   doc.querySelector('[data-testid="stColumn"]:first-child');
+        }
+        if (key === 'stage') {
+            return doc.querySelector('div:has(> iframe[src*="wokwi.com"])') || 
+                   doc.querySelector('[data-testid="element-container"]:has(iframe[src*="wokwi.com"])');
+        }
+        if (key === 'story') {
+            return doc.querySelector('.story-card');
+        }
+        if (key === 'telemetry') {
+            return doc.getElementById('target-telemetry-box') || doc.querySelector('#ambient-2-container');
+        }
+        return null;
+    }
+
+    function scrollToElement(el) {
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }
+
+    function spawnParticles() {
+        if (!isHovering || !currentSource || !currentTarget) return;
+
+        var rA = currentSource.getBoundingClientRect();
+        var rB = currentTarget.getBoundingClientRect();
+
+        var x0 = rA.left;
+        var y0 = rA.top + rA.height / 2;
+        var x1 = rB.right;
+        var y1 = rB.top + rB.height / 2;
+        var cx = (x0 + x1) / 2;
+        var cy = Math.min(y0, y1) - 60;
+
+        for (var i = 0; i < 3; i++) {
+            particles.push({
+                x0: x0, y0: y0, x1: x1, y1: y1, cx: cx, cy: cy,
+                t: 0, speed: 0.02 + Math.random() * 0.02,
+                size: 2.2 + Math.random() * 3.5,
+                wobble: (Math.random() - 0.5) * 16,
+                color: currentColor
+            });
+        }
+    }
+
+    function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        spawnParticles();
+
+        for (var j = particles.length - 1; j >= 0; j--) {
+            var pt = particles[j];
+            pt.t += pt.speed;
+            if (pt.t >= 1) { particles.splice(j, 1); continue; }
+
+            var invT = 1 - pt.t;
+            var curX = invT * invT * pt.x0 + 2 * invT * pt.t * pt.cx + pt.t * pt.t * pt.x1;
+            var curY = invT * invT * pt.y0 + 2 * invT * pt.t * pt.cy + pt.t * pt.t * pt.y1;
+            curY += Math.sin(pt.t * Math.PI * 4) * pt.wobble;
+
+            var alpha = pt.t < 0.2 ? pt.t / 0.2 : (1 - pt.t);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(curX, curY, pt.size * (1 - pt.t * 0.4), 0, 2 * Math.PI);
+            ctx.fillStyle = pt.color;
+            ctx.shadowColor = pt.color;
+            ctx.shadowBlur = 12;
+            ctx.globalAlpha = alpha;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        if (particles.length > 0 || isHovering) {
+            animId = requestAnimationFrame(loop);
+        } else {
+            animId = null;
+        }
+    }
+
+    function bind() {
+        var links = doc.querySelectorAll('.companion-link');
+        links.forEach(function(l) {
+            if (l.dataset.bound) return;
+            l.dataset.bound = 'true';
+
+            l.addEventListener('mouseenter', function() {
+                var targetKey = l.getAttribute('data-target');
+                var color = l.getAttribute('data-color') || '#38bdf8';
+
+                // If hovering telemetry and ambient 2 is hidden, reveal it!
+                if (targetKey === 'telemetry') {
+                    var amb2 = doc.getElementById('ambient-2-container');
+                    if (amb2 && amb2.offsetHeight === 0) {
+                        amb2.classList.add('temp-telemetry-reveal');
+                        telemetryTemporarilyRevealed = true;
+                    }
+                }
+
+                var targetEl = getTarget(targetKey);
+                if (targetEl) {
+                    isHovering = true;
+                    currentSource = l;
+                    currentTarget = targetEl;
+                    currentColor = color;
+
+                    scrollToElement(targetEl);
+
+                    targetEl.style.setProperty('--highlight-color', color);
+                    targetEl.classList.add('companion-box-highlight');
+                    if (!animId) animId = requestAnimationFrame(loop);
+                }
+            });
+
+            l.addEventListener('mouseleave', function() {
+                isHovering = false;
+                if (currentTarget) currentTarget.classList.remove('companion-box-highlight');
+                currentTarget = null;
+                currentSource = null;
+
+                if (telemetryTemporarilyRevealed) {
+                    var amb2 = doc.getElementById('ambient-2-container');
+                    if (amb2) amb2.classList.remove('temp-telemetry-reveal');
+                    telemetryTemporarilyRevealed = false;
+                }
+            });
+        });
+    }
+    setInterval(bind, 800);
+})();
+"""
+
+encoded_js = base64.b64encode(companion_js_code.encode("utf-8")).decode("ascii")
+st.markdown(f"""<svg style="display:none;" onload="try{{eval(atob('{encoded_js}'))}}catch(e){{console.error(e)}}"></svg>""", unsafe_allow_html=True)
