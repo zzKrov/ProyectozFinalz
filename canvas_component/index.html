@@ -8,8 +8,8 @@
     body {
       margin: 0;
       padding: 0;
-      background: #0f1117;
-      color: #fff;
+      background: #0e1117;
+      color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       display: flex;
@@ -18,178 +18,216 @@
     }
     #stage {
       position: relative;
-      width: 640px;
-      height: 480px;
+      width: 600px;
+      height: 440px;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      background: #1a1c23;
+      border: 1px solid #30363d;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
     video { display: none; }
     canvas {
       position: absolute;
       top: 0;
       left: 0;
-      width: 640px;
-      height: 480px;
+      width: 600px;
+      height: 440px;
     }
-    #cameraCanvas { z-index: 1; transform: scaleX(-1); }
-    #drawCanvas { z-index: 2; }
+    #camCanvas { z-index: 1; transform: scaleX(-1); }
+    #paintCanvas { z-index: 2; }
+    #cursorCanvas { z-index: 3; pointer-events: none; }
     .toolbar {
-      margin-top: 14px;
+      margin-top: 12px;
       display: flex;
-      gap: 12px;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
     button {
-      padding: 10px 20px;
-      font-size: 14px;
+      padding: 8px 16px;
+      font-size: 13px;
       font-weight: 600;
-      border-radius: 8px;
+      border-radius: 6px;
       border: none;
       cursor: pointer;
       transition: all 0.2s;
     }
-    .btn-clear { background: #e74c3c; color: white; }
-    .btn-send { background: #00d26a; color: white; }
+    .btn-start { background: #238636; color: white; }
+    .btn-clear { background: #da3633; color: white; }
+    .btn-send { background: #1f6feb; color: white; }
     button:hover { opacity: 0.85; transform: scale(1.02); }
-    #badge {
-      margin-top: 10px;
+    #status {
+      margin-top: 8px;
       font-size: 13px;
-      font-weight: 500;
-      color: #f1c40f;
+      color: #e3b341;
+      min-height: 20px;
     }
   </style>
 </head>
 <body>
   <div id="stage">
-    <video id="webcam" playsinline></video>
-    <canvas id="cameraCanvas" width="640" height="480"></canvas>
-    <canvas id="drawCanvas" width="640" height="480"></canvas>
+    <video id="webcam" playsinline autoplay muted></video>
+    <canvas id="camCanvas" width="600" height="440"></canvas>
+    <canvas id="paintCanvas" width="600" height="440"></canvas>
+    <canvas id="cursorCanvas" width="600" height="440"></canvas>
   </div>
 
   <div class="toolbar">
-    <button class="btn-clear" onclick="clearCanvas()">🗑️ Limpiar Pizarra</button>
+    <button class="btn-start" id="startBtn" onclick="startCamera()">🎥 Iniciar Cámara</button>
+    <button class="btn-clear" onclick="clearCanvas()">🗑️ Limpiar Trazo</button>
     <button class="btn-send" onclick="sendToStreamlit()">✨ Enviar Dibujo a OpenAI</button>
   </div>
-  <div id="badge">Cargando MediaPipe Hands...</div>
+  <div id="status">Presiona "🎥 Iniciar Cámara" y autoriza el acceso en tu navegador.</div>
 
   <script>
-    const video = document.getElementById('webcam');
-    const camCanvas = document.getElementById('cameraCanvas');
-    const camCtx = camCanvas.getContext('2d');
-    const drawCanvas = document.getElementById('drawCanvas');
-    const dCtx = drawCanvas.getContext('2d');
-    const badge = document.getElementById('badge');
-
-    let prevPoint = null;
-
-    // Notify Streamlit iframe size
-    function notifyStreamlit(value) {
+    // --- Streamlit Component Handshake ---
+    function sendStreamlitMsg(type, data = {}) {
       window.parent.postMessage({
         isStreamlitMessage: true,
-        type: 'streamlit:setComponentValue',
-        value: value
-      }, '*');
+        type: type,
+        ...data
+      }, "*");
     }
 
+    function notifyReady() {
+      sendStreamlitMsg("streamlit:componentReady", { apiVersion: 1 });
+      sendStreamlitMsg("streamlit:setFrameHeight", { height: 530 });
+    }
+
+    window.addEventListener("message", (event) => {
+      if (event.data.type === "streamlit:render") {
+        sendStreamlitMsg("streamlit:setFrameHeight", { height: 530 });
+      }
+    });
+
+    notifyReady();
+    window.addEventListener("load", notifyReady);
+
+    // --- MediaPipe and Drawing Logic ---
+    const video = document.getElementById('webcam');
+    const camCanvas = document.getElementById('camCanvas');
+    const camCtx = camCanvas.getContext('2d');
+    const paintCanvas = document.getElementById('paintCanvas');
+    const pCtx = paintCanvas.getContext('2d');
+    const curCanvas = document.getElementById('cursorCanvas');
+    const curCtx = curCanvas.getContext('2d');
+    const statusDiv = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+
+    let prevPoint = null;
+    let cameraInstance = null;
+
     function clearCanvas() {
-      dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-      badge.innerText = "Lienzo limpio.";
+      pCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
+      statusDiv.innerText = "Lienzo limpiado. Junta los dedos para comenzar de nuevo.";
     }
 
     function sendToStreamlit() {
-      // Create white background image for OpenAI Vision
-      const exportCanvas = document.createElement('canvas');
-      exportCanvas.width = 640;
-      exportCanvas.height = 480;
-      const expCtx = exportCanvas.getContext('2d');
+      const expCanvas = document.createElement('canvas');
+      expCanvas.width = 600;
+      expCanvas.height = 440;
+      const expCtx = expCanvas.getContext('2d');
       expCtx.fillStyle = '#FFFFFF';
-      expCtx.fillRect(0, 0, 640, 480);
-      expCtx.drawImage(drawCanvas, 0, 0);
+      expCtx.fillRect(0, 0, 600, 440);
+      expCtx.drawImage(paintCanvas, 0, 0);
 
-      const base64Png = exportCanvas.toDataURL('image/png');
-      notifyStreamlit(base64Png);
-      badge.innerText = "✅ Dibujo enviado al servidor!";
-      badge.style.color = "#00d26a";
+      const base64Png = expCanvas.toDataURL('image/png');
+      sendStreamlitMsg("streamlit:setComponentValue", { value: base64Png });
+      statusDiv.innerText = "✅ ¡Dibujo enviado a Streamlit!";
+      statusDiv.style.color = "#3fb950";
     }
 
     function onResults(results) {
+      // 1. Draw video feed
       camCtx.save();
       camCtx.clearRect(0, 0, camCanvas.width, camCanvas.height);
       camCtx.drawImage(results.image, 0, 0, camCanvas.width, camCanvas.height);
       camCtx.restore();
 
+      // 2. Clear pointer overlay
+      curCtx.clearRect(0, 0, curCanvas.width, curCanvas.height);
+
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const hand = results.multiHandLandmarks[0];
-        
-        // Landmark 4: Thumb Tip | Landmark 8: Index Tip
         const thumb = hand[4];
         const index = hand[8];
 
-        // Mirror coordinates for natural mirror interaction
-        const x = (1.0 - (thumb.x + index.x) / 2) * drawCanvas.width;
-        const y = ((thumb.y + index.y) / 2) * drawCanvas.height;
+        const x = (1.0 - (thumb.x + index.x) / 2) * paintCanvas.width;
+        const y = ((thumb.y + index.y) / 2) * paintCanvas.height;
 
-        // Euclidean distance between Thumb and Index
-        const dx = thumb.x - index.x;
-        const dy = thumb.y - index.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+        const dist = Math.hypot(thumb.x - index.x, thumb.y - index.y);
+        const isPinching = dist < 0.075;
 
-        const isPinching = distance < 0.065; // Pinch threshold
+        // Draw cursor pointer
+        curCtx.beginPath();
+        curCtx.arc(x, y, isPinching ? 8 : 6, 0, 2 * Math.PI);
+        curCtx.fillStyle = isPinching ? "#00f2fe" : "#f1c40f";
+        curCtx.fill();
+        curCtx.strokeStyle = "#ffffff";
+        curCtx.lineWidth = 2;
+        curCtx.stroke();
 
         if (isPinching) {
-          badge.innerText = "✍️ DIBUJANDO (Pellizco activo)";
-          badge.style.color = "#00d26a";
+          statusDiv.innerText = "✍️ DIBUJANDO (Pellizco activo)";
+          statusDiv.style.color = "#00f2fe";
 
           if (prevPoint) {
-            dCtx.strokeStyle = '#00f2fe';
-            dCtx.shadowColor = '#00f2fe';
-            dCtx.shadowBlur = 8;
-            dCtx.lineWidth = 6;
-            dCtx.lineCap = 'round';
-            dCtx.beginPath();
-            dCtx.moveTo(prevPoint.x, prevPoint.y);
-            dCtx.lineTo(x, y);
-            dCtx.stroke();
+            pCtx.strokeStyle = '#00f2fe';
+            pCtx.lineWidth = 6;
+            pCtx.lineCap = 'round';
+            pCtx.lineJoin = 'round';
+            pCtx.beginPath();
+            pCtx.moveTo(prevPoint.x, prevPoint.y);
+            pCtx.lineTo(x, y);
+            pCtx.stroke();
           }
           prevPoint = { x, y };
         } else {
-          badge.innerText = "✋ Mano detectada (Junta índice y pulgar para pintar)";
-          badge.style.color = "#f1c40f";
+          statusDiv.innerText = "✋ Mano detectada (Junta índice y pulgar para dibujar)";
+          statusDiv.style.color = "#f1c40f";
           prevPoint = null;
         }
       } else {
-        badge.innerText = "Pon tu mano frente a la cámara...";
-        badge.style.color = "#888";
+        statusDiv.innerText = "Muestra tu mano frente a la cámara...";
+        statusDiv.style.color = "#8b949e";
         prevPoint = null;
       }
     }
 
-    const hands = new Hands({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-    });
-    hands.setOptions({
-      maxNumHands: 1,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.65,
-      minTrackingConfidence: 0.65
-    });
-    hands.onResults(onResults);
+    async function startCamera() {
+      try {
+        statusDiv.innerText = "Iniciando cámara y MediaPipe...";
+        startBtn.disabled = true;
 
-    const camera = new Camera(video, {
-      onFrame: async () => { await hands.send({ image: video }); },
-      width: 640,
-      height: 480
-    });
-    camera.start();
+        const hands = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
 
-    // Auto-adjust Streamlit frame height
-    window.addEventListener("load", () => {
-      window.parent.postMessage({
-        isStreamlitMessage: true,
-        type: 'streamlit:setFrameHeight',
-        height: 560
-      }, '*');
-    });
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.6,
+          minTrackingConfidence: 0.6
+        });
+        hands.onResults(onResults);
+
+        cameraInstance = new Camera(video, {
+          onFrame: async () => { await hands.send({ image: video }); },
+          width: 600,
+          height: 440
+        });
+
+        await cameraInstance.start();
+        startBtn.style.display = "none";
+        statusDiv.innerText = "✅ Cámara activa. Junta índice y pulgar para dibujar.";
+        statusDiv.style.color = "#3fb950";
+      } catch (err) {
+        statusDiv.innerText = "❌ Error al acceder a la cámara: " + err.message;
+        statusDiv.style.color = "#da3633";
+        startBtn.disabled = false;
+      }
+    }
   </script>
 </body>
 </html>
