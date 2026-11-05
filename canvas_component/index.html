@@ -79,11 +79,6 @@
       filter: brightness(1.15); 
       transform: translateY(-2px) scale(1.02); 
     }
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
     #status {
       margin-top: 8px;
       font-size: 12.5px;
@@ -227,10 +222,6 @@
         return;
       }
 
-      sendBtn.disabled = true;
-      sendBtn.innerText = "⏳ Enviando...";
-      statusDiv.innerText = "✨ Enviando trazo al narrador...";
-
       const cCanvas = document.createElement('canvas');
       cCanvas.width = box.w; cCanvas.height = box.h;
       cCanvas.getContext('2d').drawImage(paintCanvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
@@ -252,12 +243,7 @@
         })
       });
 
-      // Automatically re-enable button and clear status after 3.5s
-      setTimeout(() => {
-        sendBtn.disabled = false;
-        sendBtn.innerText = "✨ Tejer en la historia";
-        statusDiv.innerText = "✨ ¡Trazo recibido! Preparando la escena...";
-      }, 3500);
+      statusDiv.innerText = "✨ ¡Tejiendo capítulo en el escenario! Mira a la derecha...";
     }
 
     function onResults(results) {
