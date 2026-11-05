@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Constantes Globales
+# Global Constants & Configuration
 # ---------------------------------------------------------
 WOKWI_PROJECT_ID = "479816492813091841"
 MQTT_BROKER = "broker.hivemq.com"
@@ -27,7 +27,7 @@ MQTT_TOPIC = "air_draw_story/stage_cue"
 MQTT_TOPIC_TELEMETRY = "air_draw_story/telemetry"
 
 # ---------------------------------------------------------
-# Almacén de Telemetría Bidireccional (Wokwi -> Streamlit)
+# Global Telemetry Store (Wokwi -> Streamlit)
 # ---------------------------------------------------------
 if "latest_telemetry" not in st.session_state:
     st.session_state.latest_telemetry = {
@@ -66,7 +66,7 @@ if "telemetry_thread_started" not in st.session_state:
     start_telemetry_listener()
 
 # ---------------------------------------------------------
-# Carga Segura de Imágenes en Base64 (4.png a 1.png)
+# Helper to Embed Images Safely in HTML Report
 # ---------------------------------------------------------
 def render_report_image(filename, title, caption):
     if os.path.exists(filename):
@@ -84,13 +84,14 @@ slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2:
 slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en vivo — Música en zumbador, OLED activa y luces encendidas (1.png)")
 
 # ---------------------------------------------------------
-# Estilos CSS y Cajón Lateral Puro
+# Luminous Theme & Pure CSS Drawer
 # ---------------------------------------------------------
 magical_theme = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500&display=swap');
 
-html, body, [data-testid="stAppViewContainer"], .main, .drawer-content {{
+/* Force native smooth scroll on Streamlit's real scroll containers */
+html, body, [data-testid="stAppViewContainer"], section.main, .stApp, .drawer-content, [data-testid="stVerticalBlock"] {{
     scroll-behavior: smooth !important;
 }}
 
@@ -151,12 +152,12 @@ html, body, [data-testid="stAppViewContainer"] {{
     margin-top: 2px;
 }}
 
-/* Contenedores Seleccionables para Resaltado */
+/* Real Container Targets for Seamless Outlining */
 div:has(> iframe[title*="air_canvas"]),
 [data-testid="element-container"]:has(iframe[title*="air_canvas"]) {{
     position: relative !important;
     border-radius: 16px !important;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }}
 
 div:has(> iframe[src*="wokwi.com"]),
@@ -166,11 +167,20 @@ div:has(> iframe[src*="wokwi.com"]),
     background: #0d0a1f !important;
     border: 1px solid rgba(192, 132, 252, 0.35) !important;
     box-shadow: 0 0 30px rgba(112, 0, 255, 0.2) !important;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}}
+
+/* Dynamic Box Highlight Activated by Pure CSS or JS */
+.companion-box-active {{
+    outline: 4px solid var(--highlight-color, #38bdf8) !important;
+    box-shadow: 0 0 50px var(--highlight-color, #38bdf8), 0 0 90px rgba(192, 132, 252, 0.4) !important;
+    transform: scale(1.012) !important;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }}
 
-/* Despliegue animado para telemetría */
+/* Telemetry Reveal Animation */
 .telemetry-slide-reveal {{
+    display: block !important;
     animation: slideDownFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }}
 @keyframes slideDownFade {{
@@ -224,6 +234,7 @@ div:has(> iframe[src*="wokwi.com"]),
     margin-top: 6px;
 }}
 
+/* Floating Hologram Layer */
 .hologram-overlay-container {{
     position: relative;
     height: 0px;
@@ -256,7 +267,7 @@ div.stButton > button {{
     padding: 4px 12px !important;
 }}
 
-/* Cajón Lateral con Checkbox Puro */
+/* Pure CSS Drawer */
 .drawer-checkbox {{
     display: none !important;
 }}
@@ -328,7 +339,7 @@ div.stButton > button {{
     box-sizing: border-box;
 }}
 
-/* Fondo no bloqueante: permite scroll en la página principal */
+/* Non-blocking backdrop with zero blur */
 .drawer-backdrop {{
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -491,9 +502,9 @@ div.stButton > button {{
 <p>A continuación se observa el estado de reposo del teatro antes de que se inicie la obra:</p>
 {slot_img_2}
 <ul style="padding-left:18px;margin-top:4px;">
-<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red" data-target="curtains" data-color="#f43f5e">🎭 Resaltar Telones en Escenario</span></li>
-<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold" data-target="prop" data-color="#fbbf24">🚀 Resaltar Elevador Mecánico</span></li>
-<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan" data-target="wind" data-color="#38bdf8">🌪️ Resaltar Máquina de Viento</span></li>
+<li style="margin-bottom:10px;"><b>Servos 13 y 25 (Telón izquierdo y derecho):</b> Empiezan cerrados en el centro. Cuando empieza la historia se abren hacia los lados para revelar el escenario, y se vuelven a cerrar cuando termina el acto.<br><span class="companion-link red" data-target="stage" data-color="#f43f5e">🎭 Resaltar Telones en Escenario</span></li>
+<li style="margin-bottom:10px;"><b>Servo 14 (Elevador de personaje):</b> Funciona como una trampilla debajo del escenario. Sube físicamente al personaje a la escena (sube poco si es un animal terrestre y sube alto si es un ave o dragón volador), y lo baja al terminar.<br><span class="companion-link gold" data-target="stage" data-color="#fbbf24">🚀 Resaltar Elevador Mecánico</span></li>
+<li style="margin-bottom:10px;"><b>Servo 27 (Máquina de viento):</b> Se balancea suavemente de un lado a otro mientras suena la música para darle movimiento escénico al fondo (simulando brisa o marea).<br><span class="companion-link cyan" data-target="stage" data-color="#38bdf8">🌪️ Resaltar Máquina de Viento</span></li>
 </ul>
 <div class="drawer-section-title">💡 El resto del hardware en acción:</div>
 {slot_img_1}
@@ -509,7 +520,7 @@ div.stButton > button {{
 st.markdown(magical_theme, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Transmisor MQTT Síncrono Seguro
+# Synchronous MQTT Transmitter
 # ---------------------------------------------------------
 def send_stage_cue(payload_dict):
     prev_timeout = socket.getdefaulttimeout()
@@ -549,7 +560,7 @@ if "narrator_voice" not in st.session_state:
     st.session_state.narrator_voice = "coral"
 
 # ---------------------------------------------------------
-# Barra Superior & Selector de Navegación
+# Header & Navigation Switcher
 # ---------------------------------------------------------
 st.markdown("""
 <div class="header-glow">
@@ -731,6 +742,7 @@ def render_ambiente_1():
                     clean_json = match.group(0) if match else raw_content.strip()
                     chapter_data = json.loads(clean_json)
 
+                    # High-Fidelity Voice Synthesis
                     story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
                     tts = client.audio.speech.create(
                         model="tts-1-hd",
@@ -951,22 +963,42 @@ render_ambiente_2()
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Companion Engine (Base64 Auto-Execution: Particles & Auto-Scroll)
+# Reliable Injected Client-Side Companion Controller
 # ---------------------------------------------------------
-companion_js_code = """
+companion_client_script = """
 (function() {
-    var doc = document;
-    if (!doc || !doc.body) return;
-
-    var canvas = doc.getElementById('companion-trail-canvas');
-    if (!canvas) {
-        canvas = doc.createElement('canvas');
-        canvas.id = 'companion-trail-canvas';
-        canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:10000001;';
-        doc.body.appendChild(canvas);
+    function findTarget(key) {
+        if (key === 'canvas') {
+            return document.querySelector('div:has(> iframe[title*="air_canvas"])') ||
+                   document.querySelector('[data-testid="element-container"]:has(iframe[title*="air_canvas"])') ||
+                   document.querySelector('[data-testid="stColumn"]:first-child');
+        }
+        if (key === 'stage') {
+            return document.querySelector('div:has(> iframe[src*="wokwi.com"])') ||
+                   document.querySelector('[data-testid="element-container"]:has(iframe[src*="wokwi.com"])');
+        }
+        if (key === 'story') {
+            return document.querySelector('.story-card');
+        }
+        if (key === 'telemetry') {
+            return document.getElementById('target-telemetry-box') || document.getElementById('ambience-2-wrapper');
+        }
+        return null;
     }
-    var ctx = canvas.getContext('2d');
 
+    function initCanvas() {
+        var c = document.getElementById('companion-trail-canvas');
+        if (!c) {
+            c = document.createElement('canvas');
+            c.id = 'companion-trail-canvas';
+            c.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999999;';
+            document.body.appendChild(c);
+        }
+        return c;
+    }
+
+    var canvas = initCanvas();
+    var ctx = canvas.getContext('2d');
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -975,78 +1007,49 @@ companion_js_code = """
     window.addEventListener('resize', resize);
 
     var particles = [];
-    var isHovering = false;
-    var currentSource = null;
+    var isHover = false;
+    var currentBadge = null;
     var currentTarget = null;
-    var currentColor = '#38bdf8';
-    var animId = null;
-    var tempTelemetryTimer = null;
+    var currentHex = '#38bdf8';
+    var animFrame = null;
+    var hideTelemetryTimer = null;
 
-    function getTarget(key) {
-        if (key === 'canvas') {
-            return doc.querySelector('div:has(> iframe[title*="air_canvas"])') ||
-                   doc.querySelector('[data-testid="element-container"]:has(iframe[title*="air_canvas"])') ||
-                   doc.querySelector('[data-testid="stColumn"]:first-child');
-        }
-        if (key === 'stage' || key === 'curtains' || key === 'prop' || key === 'wind') {
-            return doc.querySelector('div:has(> iframe[src*="wokwi.com"])') ||
-                   doc.querySelector('[data-testid="element-container"]:has(iframe[src*="wokwi.com"])');
-        }
-        if (key === 'story') {
-            return doc.querySelector('.story-card');
-        }
-        if (key === 'telemetry') {
-            return doc.getElementById('target-telemetry-box') || doc.querySelector('#ambience-2-wrapper');
-        }
-        return null;
-    }
-
-    function scrollToElement(el) {
-        if (!el) return;
-        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-    }
-
-    function spawnParticles() {
-        if (!isHovering || !currentSource || !currentTarget) return;
-
-        var rectA = currentSource.getBoundingClientRect();
-        var rectB = currentTarget.getBoundingClientRect();
-
-        var x0 = rectA.left;
-        var y0 = rectA.top + rectA.height / 2;
-        var x1 = rectB.right;
-        var y1 = rectB.top + rectB.height / 2;
+    function spawn() {
+        if (!isHover || !currentBadge || !currentTarget) return;
+        var rA = currentBadge.getBoundingClientRect();
+        var rB = currentTarget.getBoundingClientRect();
+        var x0 = rA.left;
+        var y0 = rA.top + rA.height / 2;
+        var x1 = rB.right;
+        var y1 = rB.top + rB.height / 2;
         var cx = (x0 + x1) / 2;
         var cy = Math.min(y0, y1) - 60;
 
         for (var i = 0; i < 3; i++) {
             particles.push({
-                x0: x0, y0: y0, x1: x1, y1: y1,
-                cx: cx, cy: cy,
-                t: 0,
-                speed: 0.024 + Math.random() * 0.02,
+                x0: x0, y0: y0, x1: x1, y1: y1, cx: cx, cy: cy,
+                t: 0, speed: 0.024 + Math.random() * 0.02,
                 size: 2.2 + Math.random() * 3.2,
                 wobble: (Math.random() - 0.5) * 14,
-                color: currentColor
+                color: currentHex
             });
         }
     }
 
-    function render() {
+    function loop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        spawnParticles();
+        spawn();
 
-        if (isHovering && currentTarget) {
+        if (isHover && currentTarget) {
             var r = currentTarget.getBoundingClientRect();
             var p = 6;
             var bx = r.left - p, by = r.top - p, bw = r.width + p * 2, bh = r.height + p * 2;
 
             ctx.save();
-            ctx.strokeStyle = currentColor;
+            ctx.strokeStyle = currentHex;
             ctx.lineWidth = 3.5;
-            ctx.shadowColor = currentColor;
+            ctx.shadowColor = currentHex;
             ctx.shadowBlur = 24;
-
             if (ctx.roundRect) {
                 ctx.beginPath();
                 ctx.roundRect(bx, by, bw, bh, 14);
@@ -1054,15 +1057,6 @@ companion_js_code = """
             } else {
                 ctx.strokeRect(bx, by, bw, bh);
             }
-
-            var len = 22;
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.moveTo(bx, by + len); ctx.lineTo(bx, by); ctx.lineTo(bx + len, by);
-            ctx.moveTo(bx + bw - len, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + len);
-            ctx.moveTo(bx, by + bh - len); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + len, by + bh);
-            ctx.moveTo(bx + bw - len, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - len);
-            ctx.stroke();
             ctx.restore();
         }
 
@@ -1088,58 +1082,63 @@ companion_js_code = """
             ctx.restore();
         }
 
-        if (particles.length > 0 || isHovering) {
-            animId = requestAnimationFrame(render);
+        if (particles.length > 0 || isHover) {
+            animFrame = requestAnimationFrame(loop);
         } else {
-            animId = null;
+            animFrame = null;
         }
     }
 
-    function startAnimation() {
-        if (!animId) animId = requestAnimationFrame(render);
+    function startLoop() {
+        if (!animFrame) animFrame = requestAnimationFrame(loop);
     }
 
-    function bind() {
-        var links = doc.querySelectorAll('.companion-link');
-        links.forEach(function(l) {
-            if (l.dataset.bound) return;
-            l.dataset.bound = 'true';
+    function bindLinks() {
+        var badges = document.querySelectorAll('.companion-link');
+        badges.forEach(function(b) {
+            if (b.dataset.activeBridge) return;
+            b.dataset.activeBridge = 'true';
 
-            l.addEventListener('mouseenter', function() {
-                var targetKey = l.getAttribute('data-target');
-                var color = l.getAttribute('data-color') || '#38bdf8';
+            b.addEventListener('mouseenter', function() {
+                var targetKey = b.getAttribute('data-target');
+                var colorHex = b.getAttribute('data-color') || '#38bdf8';
 
                 if (targetKey === 'telemetry') {
-                    if (tempTelemetryTimer) clearTimeout(tempTelemetryTimer);
-                    var amb2 = doc.getElementById('ambience-2-wrapper');
+                    if (hideTelemetryTimer) clearTimeout(hideTelemetryTimer);
+                    var amb2 = document.getElementById('ambience-2-wrapper');
                     if (amb2 && (amb2.style.display === 'none' || getComputedStyle(amb2).display === 'none')) {
                         amb2.style.display = 'block';
                         amb2.classList.add('telemetry-slide-reveal');
                     }
                 }
 
-                var targetEl = getTarget(targetKey);
-                if (targetEl) {
-                    isHovering = true;
-                    currentSource = l;
-                    currentTarget = targetEl;
-                    currentColor = color;
+                var targetNode = findTarget(targetKey);
+                if (targetNode) {
+                    isHover = true;
+                    currentBadge = b;
+                    currentTarget = targetNode;
+                    currentHex = colorHex;
 
-                    scrollToElement(targetEl);
-                    startAnimation();
+                    targetNode.style.setProperty('--highlight-color', colorHex);
+                    targetNode.classList.add('companion-box-active');
+
+                    // Auto-scroll directly to targeted element
+                    targetNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    startLoop();
                 }
             });
 
-            l.addEventListener('mouseleave', function() {
-                isHovering = false;
+            b.addEventListener('mouseleave', function() {
+                isHover = false;
+                if (currentTarget) currentTarget.classList.remove('companion-box-active');
                 currentTarget = null;
-                currentSource = null;
+                currentBadge = null;
 
-                var targetKey = l.getAttribute('data-target');
+                var targetKey = b.getAttribute('data-target');
                 if (targetKey === 'telemetry') {
-                    tempTelemetryTimer = setTimeout(function() {
-                        var amb2 = doc.getElementById('ambience-2-wrapper');
-                        var radio = doc.querySelector('[data-testid="stRadio"] input[type="radio"]:checked');
+                    hideTelemetryTimer = setTimeout(function() {
+                        var amb2 = document.getElementById('ambience-2-wrapper');
+                        var radio = document.querySelector('[data-testid="stRadio"] input[type="radio"]:checked');
                         var radioLabel = radio ? (radio.closest('label') || {}).innerText || '' : '';
                         if (amb2 && radioLabel.indexOf('Ambiente 2') === -1 && radioLabel.indexOf('Dual') === -1) {
                             amb2.style.display = 'none';
@@ -1151,10 +1150,27 @@ companion_js_code = """
         });
     }
 
-    setInterval(bind, 800);
+    setInterval(bindLinks, 600);
 })();
 """
 
-encoded_js = base64.b64encode(companion_js_code.encode("utf-8")).decode("ascii")
-# Reliable trigger on image load in the top-level DOM
-st.markdown(f"""<img src="//:0" style="display:none;" onerror="eval(atob('{encoded_js}'))" />""", unsafe_allow_html=True)
+# Native, safe iframe injection with parent hook
+components.html(f"""
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+try {{
+    var win = window.parent;
+    var doc = win.document;
+    var scriptEl = doc.createElement('script');
+    scriptEl.type = 'text/javascript';
+    scriptEl.text = {json.dumps(companion_client_script)};
+    doc.body.appendChild(scriptEl);
+}} catch(err) {{
+    console.warn("Companion parent hook notice:", err);
+}}
+</script>
+</body>
+</html>
+""", height=0)
