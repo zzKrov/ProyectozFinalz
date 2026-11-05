@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Global Constants & Configuration
+# Constantes Globales
 # ---------------------------------------------------------
 WOKWI_PROJECT_ID = "479816492813091841"
 MQTT_BROKER = "broker.hivemq.com"
@@ -27,7 +27,7 @@ MQTT_TOPIC = "air_draw_story/stage_cue"
 MQTT_TOPIC_TELEMETRY = "air_draw_story/telemetry"
 
 # ---------------------------------------------------------
-# Global Telemetry Store (Wokwi -> Streamlit)
+# Almacén de Telemetría Bidireccional (Wokwi -> Streamlit)
 # ---------------------------------------------------------
 if "latest_telemetry" not in st.session_state:
     st.session_state.latest_telemetry = {
@@ -66,7 +66,7 @@ if "telemetry_thread_started" not in st.session_state:
     start_telemetry_listener()
 
 # ---------------------------------------------------------
-# Helper to Embed Images Safely in HTML Report
+# Carga Segura de Imágenes en Base64 (4.png a 1.png)
 # ---------------------------------------------------------
 def render_report_image(filename, title, caption):
     if os.path.exists(filename):
@@ -84,7 +84,7 @@ slot_img_2 = render_report_image("2.png", "Estado Inicial en Reposo", "Figura 2:
 slot_img_1 = render_report_image("1.png", "Actuación en Vivo y Partitura", "Figura 1: Actuación en vivo — Música en zumbador, OLED activa y luces encendidas (1.png)")
 
 # ---------------------------------------------------------
-# Luminous Theme & Pure CSS Drawer
+# Estilos CSS y Cajón Lateral Puro
 # ---------------------------------------------------------
 magical_theme = f"""
 <style>
@@ -151,7 +151,7 @@ html, body, [data-testid="stAppViewContainer"] {{
     margin-top: 2px;
 }}
 
-/* Real Container Target Selectors */
+/* Contenedores Seleccionables para Resaltado */
 div:has(> iframe[title*="air_canvas"]),
 [data-testid="element-container"]:has(iframe[title*="air_canvas"]) {{
     position: relative !important;
@@ -169,7 +169,7 @@ div:has(> iframe[src*="wokwi.com"]),
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }}
 
-/* Telemetry Slide Animation */
+/* Despliegue animado para telemetría */
 .telemetry-slide-reveal {{
     animation: slideDownFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }}
@@ -224,7 +224,6 @@ div:has(> iframe[src*="wokwi.com"]),
     margin-top: 6px;
 }}
 
-/* Floating Hologram Layer */
 .hologram-overlay-container {{
     position: relative;
     height: 0px;
@@ -257,7 +256,7 @@ div.stButton > button {{
     padding: 4px 12px !important;
 }}
 
-/* Pure CSS Drawer */
+/* Cajón Lateral con Checkbox Puro */
 .drawer-checkbox {{
     display: none !important;
 }}
@@ -329,7 +328,7 @@ div.stButton > button {{
     box-sizing: border-box;
 }}
 
-/* Clean, transparent backdrop with zero blur to keep site razor-sharp */
+/* Fondo no bloqueante: permite scroll en la página principal */
 .drawer-backdrop {{
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -337,7 +336,7 @@ div.stButton > button {{
     backdrop-filter: none !important;
     z-index: 9999999 !important;
     opacity: 0;
-    pointer-events: none;
+    pointer-events: none !important;
     transition: opacity 0.3s ease;
 }}
 
@@ -346,7 +345,6 @@ div.stButton > button {{
 }}
 .drawer-checkbox:checked ~ .drawer-backdrop {{
     opacity: 1 !important;
-    pointer-events: auto !important;
 }}
 
 .drawer-header {{
@@ -511,7 +509,7 @@ div.stButton > button {{
 st.markdown(magical_theme, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Synchronous MQTT Transmitter
+# Transmisor MQTT Síncrono Seguro
 # ---------------------------------------------------------
 def send_stage_cue(payload_dict):
     prev_timeout = socket.getdefaulttimeout()
@@ -551,7 +549,7 @@ if "narrator_voice" not in st.session_state:
     st.session_state.narrator_voice = "coral"
 
 # ---------------------------------------------------------
-# Header & Navigation Switcher
+# Barra Superior & Selector de Navegación
 # ---------------------------------------------------------
 st.markdown("""
 <div class="header-glow">
@@ -733,7 +731,6 @@ def render_ambiente_1():
                     clean_json = match.group(0) if match else raw_content.strip()
                     chapter_data = json.loads(clean_json)
 
-                    # High-Fidelity Voice Synthesis
                     story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
                     tts = client.audio.speech.create(
                         model="tts-1-hd",
@@ -954,7 +951,7 @@ render_ambiente_2()
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Companion Engine (Encoded Payload: Auto-Scroll & Particles)
+# Companion Engine (Base64 Auto-Execution: Particles & Auto-Scroll)
 # ---------------------------------------------------------
 companion_js_code = """
 (function() {
@@ -1017,10 +1014,8 @@ companion_js_code = """
 
         var x0 = rectA.left;
         var y0 = rectA.top + rectA.height / 2;
-
         var x1 = rectB.right;
         var y1 = rectB.top + rectB.height / 2;
-
         var cx = (x0 + x1) / 2;
         var cy = Math.min(y0, y1) - 60;
 
@@ -1161,4 +1156,5 @@ companion_js_code = """
 """
 
 encoded_js = base64.b64encode(companion_js_code.encode("utf-8")).decode("ascii")
-st.markdown(f"""<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="display:none;" onload="eval(atob('{encoded_js}'))" />""", unsafe_allow_html=True)
+# Reliable trigger on image load in the top-level DOM
+st.markdown(f"""<img src="//:0" style="display:none;" onerror="eval(atob('{encoded_js}'))" />""", unsafe_allow_html=True)
