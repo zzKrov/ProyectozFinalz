@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Magic Theme Styling & Integrated Playground CSS
+# Magic Theme Styling
 # ---------------------------------------------------------
 magic_styles = """
 <style>
@@ -78,19 +78,20 @@ html, body, [data-testid="stAppViewContainer"] {
 st.markdown(magic_styles, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Configuration & Secrets
+# Live Configuration
 # ---------------------------------------------------------
-WOKWI_PROJECT_ID = "479816492813091841"
+LIVE_WOKWI_URL = "https://wokwi.com/projects/479816492813091841?embed=1"
 MQTT_BROKER = "broker.hivemq.com"
+MQTT_TOPIC = "air_draw_story/stage_cue"
 
 api_key = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", None))
 
 st.markdown('<div class="title-glow">🎭 El Gran Teatro Mecatrónico 🌟</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">¡Dibuja en el aire y mira cómo los telones se abren, los motores mueven el escenario y tu dibujo cobra vida!</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">¡Dibuja en el aire y mira cómo los motores físicos del escenario cobran vida en tiempo real!</div>', unsafe_allow_html=True)
 
 if not api_key:
-    with st.expander("🔑 Falta configurar la Llave Mágica (OpenAI API Key)", expanded=True):
-        temp_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
+    with st.expander("🔑 Llave Mágica (OpenAI API Key)", expanded=True):
+        temp_key = st.text_input("Ingresa tu OpenAI API Key", type="password", placeholder="sk-...")
         if temp_key:
             api_key = temp_key
 
@@ -106,13 +107,13 @@ if "audio_bytes" not in st.session_state:
 if "drawing_cutout" not in st.session_state:
     st.session_state.drawing_cutout = None
 
-col_draw, col_theater = st.columns([1.0, 1.1], gap="large")
+# Top Section: Drawing and Animated Story Box
+col_draw, col_stage = st.columns([1.0, 1.0], gap="large")
 
 with col_draw:
     st.markdown("### 🎨 Tu Lienzo en el Aire")
     canvas_output = air_canvas(default=None, key="air_canvas_ui")
 
-# Handle 1-click storytelling and theatrical cue dispatch
 if canvas_output and api_key:
     try:
         data = json.loads(canvas_output)
@@ -123,7 +124,7 @@ if canvas_output and api_key:
             st.session_state.last_processed = cutout_img
             st.session_state.drawing_cutout = cutout_img
 
-            with st.spinner("🎪 ¡El director de escena está preparando los motores y el cuento!..."):
+            with st.spinner("🎪 ¡El Director de Escena está coreografiando los motores!..."):
                 client = OpenAI(api_key=api_key)
                 base64_data = vision_img.split(",")[1]
 
@@ -135,14 +136,14 @@ if canvas_output and api_key:
                 3. Define la dirección física de escena para Wokwi:
                    - mood: "FUEGO", "OCEANO", "BOSQUE", "ESPACIO" o "MAGIA".
                    - sky_r, sky_g, sky_b: Color del cielo (NeoPixel Ring).
-                   - gnd_r, gnd_g, gnd_b: Color de las candilejas de suelo (NeoPixel Strip).
-                   - prop_height: Altura física del elevador (de 40 a 170). Si vuela/salta usa 160; si nada/camina usa 70.
-                   - headline: Texto de máximo 10 caracteres para el teleprompter OLED.
-                4. Define 4 keyframes CSS transform para el dibujo recortado (x [-60 a 60], y [-30 a 30], scale [0.85 a 1.25], rotate [-20 a 20]).
+                   - gnd_r, gnd_g, gnd_b: Color de las candilejas (NeoPixel Strip).
+                   - prop_height: Altura del elevador físico (40 a 160). Si vuela/salta usa 150, si camina/nada usa 65.
+                   - headline: Texto de máximo 10 caracteres para la pantalla OLED.
+                4. Define 4 keyframes de baile para el recorte (x [-50 a 50], y [-25 a 25], scale [0.9 a 1.2], rotate [-15 a 15]).
 
-                Responde estricta y únicamente en formato JSON:
+                Responde ÚNICAMENTE en JSON:
                 {
-                  "interpretation": "descripción del personaje",
+                  "interpretation": "descripción breve",
                   "title": "Título Cuento",
                   "story_spanish": "Había una vez...",
                   "stage_cue": {
@@ -150,12 +151,12 @@ if canvas_output and api_key:
                     "mood": "FUEGO",
                     "sky_r": 255, "sky_g": 60, "sky_b": 0,
                     "gnd_r": 255, "gnd_g": 180, "gnd_b": 0,
-                    "prop_height": 160
+                    "prop_height": 150
                   },
                   "keyframes": [
-                    { "x": 0, "y": -25, "scale": 1.15, "rotate": 10 },
-                    { "x": 50, "y": -15, "scale": 0.9, "rotate": -12 },
-                    { "x": -45, "y": 20, "scale": 1.2, "rotate": 15 },
+                    { "x": 0, "y": -20, "scale": 1.15, "rotate": 8 },
+                    { "x": 40, "y": -10, "scale": 0.95, "rotate": -10 },
+                    { "x": -35, "y": 15, "scale": 1.1, "rotate": 12 },
                     { "x": 0, "y": 0, "scale": 1.0, "rotate": 0 }
                   ]
                 }
@@ -175,7 +176,7 @@ if canvas_output and api_key:
                 story_json = json.loads(completion.choices[0].message.content)
                 st.session_state.story_data = story_json
 
-                # Generate Spanish voice narration
+                # Audio narration
                 tts = client.audio.speech.create(
                     model="tts-1",
                     voice="nova",
@@ -183,111 +184,101 @@ if canvas_output and api_key:
                 )
                 st.session_state.audio_bytes = tts.content
 
-                # Send cue to Wokwi via MQTT
+                # Retained MQTT message ensures Wokwi catches it even if booting
                 try:
                     publish.single(
-                        "air_draw_story/stage_cue",
+                        MQTT_TOPIC,
                         json.dumps(story_json["stage_cue"]),
                         hostname=MQTT_BROKER,
-                        keepalive=5
+                        retain=True,
+                        keepalive=10
                     )
-                except Exception:
-                    pass
+                except Exception as mqtt_err:
+                    st.warning(f"MQTT: {mqtt_err}")
     except Exception as e:
         st.error(f"Aviso del teatro: {e}")
 
-with col_theater:
-    st.markdown("### 🎪 El Escenario Mecatrónico en Vivo")
-    st.caption("▶️ *Recuerda presionar el botón verde **Play** en Wokwi para encender los motores del teatro.*")
+with col_stage:
+    st.markdown("### 🎭 El Personaje y su Cuento")
 
     if st.session_state.story_data and st.session_state.drawing_cutout:
-        kf = st.session_state.story_data.get("keyframes", [])
+        story = st.session_state.story_data
+        st.markdown(f"#### ✨ {story.get('title')}")
+        st.caption(f"🌟 Criatura identificada: **{story.get('interpretation')}**")
+
+        if st.session_state.audio_bytes:
+            st.audio(st.session_state.audio_bytes, format="audio/mp3", autoplay=True)
+
+        st.markdown(
+            f"""
+            <div style="background: rgba(255,255,255,0.06); padding: 14px 18px; border-radius: 14px; border-left: 4px solid #a855f7; font-size: 1.05rem; line-height: 1.5; margin-bottom: 12px;">
+            {story.get('story_spanish')}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        kf = story.get("keyframes", [])
         anim_css = f"""
-        @keyframes magicStageDance {{
+        @keyframes stickerDance {{
           0%   {{ transform: translate(0px, 0px) scale(1) rotate(0deg); }}
           25%  {{ transform: translate({kf[0]['x']}px, {kf[0]['y']}px) scale({kf[0]['scale']}) rotate({kf[0]['rotate']}deg); }}
           50%  {{ transform: translate({kf[1]['x']}px, {kf[1]['y']}px) scale({kf[1]['scale']}) rotate({kf[1]['rotate']}deg); }}
           75%  {{ transform: translate({kf[2]['x']}px, {kf[2]['y']}px) scale({kf[2]['scale']}) rotate({kf[2]['rotate']}deg); }}
           100% {{ transform: translate({kf[3]['x']}px, {kf[3]['y']}px) scale({kf[3]['scale']}) rotate({kf[3]['rotate']}deg); }}
         }}
-        .dancing-cutout {{
-          max-height: 180px;
-          max-width: 180px;
-          object-fit: contain;
-          animation: magicStageDance 6s infinite alternate ease-in-out;
-          filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 10px rgba(168, 85, 247, 0.8));
-        }}
-        """
-        cutout_img_html = f'<img src="{st.session_state.drawing_cutout}" class="dancing-cutout" />'
-    else:
-        anim_css = ""
-        cutout_img_html = """
-        <div style="background: rgba(19, 9, 43, 0.75); padding: 12px 20px; border-radius: 20px; border: 1px solid rgba(168,85,247,0.4); color: #cbd5e1; font-family: sans-serif; font-size: 13px;">
-          ✨ Dibuja a la izquierda y pulsa <b>¡Darle Vida!</b> para abrir los telones.
-        </div>
-        """
-
-    wokwi_diagram_url = f"https://wokwi.com/projects/{WOKWI_PROJECT_ID}?view=diagram"
-
-    unified_stage_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        {anim_css}
-        body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; }}
-        .stage-container {{
-          position: relative;
+        .mini-stage {{
           width: 100%;
-          height: 520px;
-          border-radius: 20px;
-          overflow: hidden;
-          background: #14161f;
-          border: 2px solid rgba(168, 85, 247, 0.4);
-          box-shadow: 0 10px 30px rgba(112, 0, 255, 0.25);
-        }}
-        .wokwi-diagram {{
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          border: none;
-          z-index: 1;
-        }}
-        .hologram-stage {{
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          z-index: 10;
-          pointer-events: none;
+          height: 200px;
+          border-radius: 16px;
+          background: radial-gradient(circle at center, #2e1065 0%, #0d061c 100%);
+          border: 2px dashed rgba(168, 85, 247, 0.4);
           display: flex;
           align-items: center;
           justify-content: center;
+          overflow: hidden;
         }}
-      </style>
-    </head>
-    <body>
-      <div class="stage-container">
-        <iframe src="{wokwi_diagram_url}" class="wokwi-diagram"></iframe>
-        <div class="hologram-stage">
-          {cutout_img_html}
+        .dancing-cutout {{
+          max-height: 150px;
+          max-width: 150px;
+          object-fit: contain;
+          animation: stickerDance 5s infinite alternate ease-in-out;
+          filter: drop-shadow(0 0 16px #38bdf8);
+        }}
+        """
+        stage_html = f"""
+        <style>{anim_css}</style>
+        <div class="mini-stage">
+          <img src="{st.session_state.drawing_cutout}" class="dancing-cutout"/>
         </div>
-      </div>
-    </body>
-    </html>
-    """
-    components.html(unified_stage_html, height=535)
-
-    if st.session_state.story_data:
-        story = st.session_state.story_data
-        st.markdown(f"#### 📖 {story.get('title')}")
-        if st.session_state.audio_bytes:
-            st.audio(st.session_state.audio_bytes, format="audio/mp3", autoplay=True)
-
+        """
+        components.html(stage_html, height=215)
+    else:
         st.markdown(
-            f"""
-            <div style="background: rgba(255,255,255,0.06); padding: 12px 18px; border-radius: 12px; border-left: 4px solid #a855f7; font-size: 1.05rem; line-height: 1.5; margin-top: 6px;">
-            {story.get('story_spanish')}
+            """
+            <div style="background: rgba(30, 20, 60, 0.4); border: 2px dashed rgba(168, 85, 247, 0.3); border-radius: 18px; height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 25px;">
+                <div style="font-size: 3.5rem; margin-bottom: 10px;">🧚✨</div>
+                <div style="font-size: 1.25rem; font-weight: 600; color: #e2e8f0;">El teatro está esperando tu creación</div>
+                <div style="font-size: 0.95rem; color: #94a3b8; max-width: 300px; margin-top: 8px;">
+                    1. Enciende la varita a la izquierda.<br>
+                    2. Junta tus dedos para pintar.<br>
+                    3. Pulsa <b>¡Darle Vida!</b> para activar los motores.
+                </div>
             </div>
-            """, 
+            """,
             unsafe_allow_html=True
         )
+
+# ---------------------------------------------------------
+# Direct Live Wokwi Stage Embed
+# ---------------------------------------------------------
+st.markdown("---")
+col_title, col_link = st.columns([0.8, 0.2])
+with col_title:
+    st.markdown("### 🎪 Escenario Físico en Vivo (Wokwi Cloud ID: `479816492813091841`)")
+    st.caption("🟢 Conectado por MQTT retenido. Presiona el botón verde ▶️ en el simulador si está detenido.")
+with col_link:
+    st.link_button("↗️ Abrir en Wokwi", "https://wokwi.com/projects/479816492813091841")
+
+# Single direct top-level embed with full hardware permissions
+components.iframe(LIVE_WOKWI_URL, height=600, scrolling=True)
