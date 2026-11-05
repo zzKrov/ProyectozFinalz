@@ -4,7 +4,7 @@ from openai import OpenAI
 import paho.mqtt.publish as publish
 import json
 import time
-import threading
+import socket
 import re
 import os
 
@@ -150,19 +150,26 @@ WOKWI_PROJECT_ID = "479816492813091841"
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_TOPIC = "air_draw_story/stage_cue"
 
-def dispatch_mqtt_async(payload_dict):
-    def _worker():
-        try:
-            publish.single(
-                MQTT_TOPIC,
-                json.dumps(payload_dict),
-                hostname=MQTT_BROKER,
-                retain=True,
-                keepalive=5
-            )
-        except Exception as e:
-            print(f"[MQTT Notice]: {e}")
-    threading.Thread(target=_worker, daemon=True).start()
+# Safe synchronous MQTT publisher with timeout (guarantees packet delivery)
+def send_stage_cue(payload_dict):
+    prev_timeout = socket.getdefaulttimeout()
+    try:
+        socket.setdefaulttimeout(3.5)
+        publish.single(
+            MQTT_TOPIC,
+            json.dumps(payload_dict),
+            hostname=MQTT_BROKER,
+            port=1883,
+            retain=True,
+            keepalive=5
+        )
+        st.toast("📡 ¡Escenario Wokwi sincronizado!", icon="🎭")
+        return True
+    except Exception as e:
+        st.warning(f"Aviso de conexión con el escenario: {e}")
+        return False
+    finally:
+        socket.setdefaulttimeout(prev_timeout)
 
 if "wokwi_session_token" not in st.session_state:
     st.session_state.wokwi_session_token = int(time.time())
@@ -185,7 +192,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# API Key Bar (only if empty)
+# API Key input if not set
 if not st.session_state.api_key:
     key_input = st.text_input("🔑 OpenAI API Key Requerida:", type="password", placeholder="sk-...")
     if key_input:
@@ -235,7 +242,7 @@ if canvas_output:
 
                 INSTRUCCIONES:
                 1. Identifica qué criatura u objeto dibujó el usuario.
-                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 o 3 oraciones sencillas y bonitas). Continuación directa de los capítulos anteriores.
+                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 3 oraciones sencillas y bonitas). Continuación directa y natural de los capítulos anteriores.
                 3. Asigna un título poético al capítulo (máx. 25 letras).
                 4. Colores y elevador para el escenario:
                    - sky_rgb: [R, G, B] color del cielo/arco superior.
@@ -269,7 +276,6 @@ if canvas_output:
                 }}
                 """
 
-                # Call model with robust system role and JSON enforcement
                 completion = client.chat.completions.create(
                     model="gpt-4o",
                     response_format={"type": "json_object"},
@@ -291,15 +297,13 @@ if canvas_output:
                 choice = completion.choices[0]
                 message = choice.message
 
-                # Guard against refusal or NoneType content
                 if getattr(message, "refusal", None):
                     raise ValueError(f"El modelo no pudo procesar la figura: {message.refusal}")
 
                 raw_content = message.content
                 if not raw_content:
-                    raise ValueError(f"Respuesta vacía del modelo (motivo: {choice.finish_reason}). Intenta dibujar de nuevo.")
+                    raise ValueError(f"Respuesta vacía del modelo (motivo: {choice.finish_reason}).")
 
-                # Robust JSON regex extraction
                 match = re.search(r"\{.*\}", raw_content, re.DOTALL)
                 clean_json = match.group(0) if match else raw_content.strip()
                 chapter_data = json.loads(clean_json)
@@ -336,23 +340,40 @@ if canvas_output:
                     "melody": chapter_data.get("melody", [])
                 }
 
-                dispatch_mqtt_async(stage_payload)
+                # Synchronous safe dispatch ensures the packet is delivered
+                send_stage_cue(stage_payload)
                 st.rerun()
 
     except Exception as err:
         st.error(f"❌ Error al generar historia: {err}")
 
 with col_stage:
-    col_st_title, col_btns = st.columns([0.65, 0.35])
+    col_st_title, col_btns = st.columns([0.55, 0.45])
     with col_st_title:
         st.markdown("##### 🎪 El Escenario Mecatrónico en Vivo")
     with col_btns:
-        btn_c1, btn_c2 = st.columns(2)
+        btn_c1, btn_c2, btn_c3 = st.columns(3)
         with btn_c1:
-            if st.button("🔄 Sync", help="Fuerza a recargar el escenario en Wokwi"):
+            # Immediate Test Button: Verifies Wokwi reacts on demand
+            if st.button("🔔 Probar", help="Envía una señal de prueba para abrir telones y probar sonido"):
+                test_cue = {
+                    "title": "Acto de Prueba",
+                    "sky_rgb": [0, 240, 255],
+                    "foot_rgb": [255, 120, 40],
+                    "intensity": 90,
+                    "prop": 135,
+                    "melody": [
+                        {"f": 523, "d": 200},
+                        {"f": 659, "d": 200},
+                        {"f": 784, "d": 350}
+                    ]
+                }
+                send_stage_cue(test_cue)
+        with btn_c2:
+            if st.button("🔄 Sync", help="Fuerza a recargar la simulación"):
                 st.session_state.wokwi_session_token = int(time.time())
                 st.rerun()
-        with btn_c2:
+        with btn_c3:
             if st.session_state.story_chapters:
                 if st.button("✨ Reset"):
                     st.session_state.story_chapters = []
@@ -360,6 +381,8 @@ with col_stage:
                     st.session_state.current_audio = None
                     st.session_state.processed_id = None
                     st.rerun()
+
+    st.caption("💡 *Asegúrate de pulsar el botón verde ▶️ (Play) dentro de Wokwi para encender el escenario.*")
 
     # The Persistent Wokwi Stage
     st.markdown('<div class="stage-box">', unsafe_allow_html=True)
