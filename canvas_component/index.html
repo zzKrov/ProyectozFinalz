@@ -79,6 +79,11 @@
       filter: brightness(1.15); 
       transform: translateY(-2px) scale(1.02); 
     }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
     #status {
       margin-top: 8px;
       font-size: 12.5px;
@@ -99,7 +104,7 @@
   <div class="toolbar">
     <button class="btn-start" id="startBtn" onclick="startCamera()">🪄 Activar espejo</button>
     <button class="btn-clear" onclick="clearCanvas()">Borrar trazo</button>
-    <button class="btn-send" onclick="sendToStreamlit()">✨ Tejer en la historia</button>
+    <button class="btn-send" id="sendBtn" onclick="sendToStreamlit()">✨ Tejer en la historia</button>
   </div>
   <div id="status">Toca "Activar espejo" para encender la luz mágica ✨</div>
 
@@ -126,6 +131,7 @@
     const curCtx = curCanvas.getContext('2d');
     const statusDiv = document.getElementById('status');
     const startBtn = document.getElementById('startBtn');
+    const sendBtn = document.getElementById('sendBtn');
 
     let prevPoint = null;
     let handsDetector = null;
@@ -221,6 +227,10 @@
         return;
       }
 
+      sendBtn.disabled = true;
+      sendBtn.innerText = "⏳ Enviando...";
+      statusDiv.innerText = "✨ Enviando trazo al narrador...";
+
       const cCanvas = document.createElement('canvas');
       cCanvas.width = box.w; cCanvas.height = box.h;
       cCanvas.getContext('2d').drawImage(paintCanvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
@@ -234,7 +244,6 @@
       vCtx.drawImage(cCanvas, 0, 0);
       const visionBase64 = vCanvas.toDataURL('image/png');
 
-      // Unique ID triggers execution instantly
       sendStreamlitMsg("streamlit:setComponentValue", {
         value: JSON.stringify({
           cutout: cutoutBase64,
@@ -242,7 +251,13 @@
           id: String(Date.now())
         })
       });
-      statusDiv.innerText = "✨ ¡Tejiendo tu nuevo capítulo en el cuento!...";
+
+      // Automatically re-enable button and clear status after 3.5s
+      setTimeout(() => {
+        sendBtn.disabled = false;
+        sendBtn.innerText = "✨ Tejer en la historia";
+        statusDiv.innerText = "✨ ¡Trazo recibido! Preparando la escena...";
+      }, 3500);
     }
 
     function onResults(results) {
@@ -262,7 +277,6 @@
         const y = ((thumb.y + index.y) / 2) * paintCanvas.height;
         const isPinching = Math.hypot(thumb.x - index.x, thumb.y - index.y) < 0.07;
 
-        // Glowing Star Pointer
         curCtx.beginPath();
         curCtx.arc(x, y, isPinching ? 7 : 9, 0, 2 * Math.PI);
         curCtx.fillStyle = isPinching ? "#38bdf8" : "rgba(192, 132, 252, 0.6)";
@@ -289,7 +303,6 @@
           }
           prevPoint = { x, y };
         } else {
-          statusDiv.innerText = "🖐️ Mano lista. Junta índice y pulgar para pintar";
           prevPoint = null;
         }
       } else {
