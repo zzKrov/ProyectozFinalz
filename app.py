@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Magical & Luminous Styling
+# Luminous Glassmorphic Theme (Cohesive & Optimized)
 # ---------------------------------------------------------
 magical_theme = """
 <style>
@@ -44,8 +44,8 @@ html, body, [data-testid="stAppViewContainer"] {
         radial-gradient(2px 2px at 420px 280px, #fde047, rgba(0,0,0,0));
     background-repeat: repeat;
     background-size: 550px 550px;
-    opacity: 0.4;
-    animation: driftStars 70s linear infinite;
+    opacity: 0.35;
+    animation: driftStars 80s linear infinite;
 }
 @keyframes driftStars {
     from { transform: translateY(0); }
@@ -54,13 +54,13 @@ html, body, [data-testid="stAppViewContainer"] {
 
 .header-glow {
     text-align: center;
-    padding: 10px 0 16px 0;
-    margin-bottom: 20px;
+    padding: 8px 0 14px 0;
+    margin-bottom: 18px;
     border-bottom: 1px solid rgba(192, 132, 252, 0.2);
 }
 .app-title {
     font-family: 'Playfair Display', serif;
-    font-size: 2.3rem;
+    font-size: 2.2rem;
     font-weight: 600;
     letter-spacing: -0.01em;
     background: linear-gradient(135deg, #fbcfe8 0%, #c084fc 45%, #38bdf8 100%);
@@ -69,19 +69,19 @@ html, body, [data-testid="stAppViewContainer"] {
     filter: drop-shadow(0 0 20px rgba(192, 132, 252, 0.45));
 }
 .app-subtitle {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     color: #cbd5e1;
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 .story-card {
     background: rgba(26, 20, 56, 0.65);
     border: 1px solid rgba(192, 132, 252, 0.3);
-    box-shadow: 0 8px 32px 0 rgba(112, 0, 255, 0.25);
+    box-shadow: 0 8px 32px 0 rgba(112, 0, 255, 0.22);
     backdrop-filter: blur(14px);
     border-radius: 16px;
     padding: 16px 20px;
-    margin-top: 10px;
+    margin-top: 8px;
 }
 .story-heading {
     font-family: 'Playfair Display', serif;
@@ -92,32 +92,31 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 .chapter-badge {
     display: inline-block;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     padding: 3px 10px;
     border-radius: 20px;
     background: rgba(56, 189, 248, 0.15);
     color: #38bdf8;
     border: 1px solid rgba(56, 189, 248, 0.35);
-    margin-bottom: 6px;
 }
 .music-badge {
     display: inline-block;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     padding: 3px 10px;
     border-radius: 20px;
     background: rgba(192, 132, 252, 0.15);
     color: #c084fc;
     border: 1px solid rgba(192, 132, 252, 0.35);
-    margin-bottom: 6px;
     margin-left: 6px;
 }
 .story-body {
     font-family: 'Playfair Display', serif;
     font-size: 1.05rem;
-    line-height: 1.6;
+    line-height: 1.65;
     color: #e2e8f0;
+    margin-top: 6px;
 }
 
 .stage-box {
@@ -150,6 +149,19 @@ html, body, [data-testid="stAppViewContainer"] {
     animation: floatAura 6s infinite ease-in-out;
     filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 35px rgba(192, 132, 252, 0.7));
 }
+
+div.stButton > button {
+    background: rgba(30, 27, 75, 0.7) !important;
+    color: #ede6de !important;
+    border: 1px solid rgba(192, 132, 252, 0.3) !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    padding: 4px 12px !important;
+}
+div.stButton > button:hover {
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+}
 </style>
 <div class="stars-overlay"></div>
 """
@@ -165,7 +177,7 @@ MQTT_TOPIC = "air_draw_story/stage_cue"
 def send_stage_cue(payload_dict):
     prev_timeout = socket.getdefaulttimeout()
     try:
-        socket.setdefaulttimeout(3.5)
+        socket.setdefaulttimeout(3.0)
         publish.single(
             MQTT_TOPIC,
             json.dumps(payload_dict),
@@ -174,7 +186,7 @@ def send_stage_cue(payload_dict):
             retain=True,
             keepalive=5
         )
-        st.toast("📡 ¡Partitura transmitida a Wokwi!", icon="🎼")
+        st.toast("📡 ¡Partitura transmitida al teatro!", icon="🎼")
         return True
     except Exception as e:
         st.warning(f"Aviso de conexión con el escenario: {e}")
@@ -194,20 +206,49 @@ if "current_audio" not in st.session_state:
     st.session_state.current_audio = None
 if "current_cutout" not in st.session_state:
     st.session_state.current_cutout = None
+if "ai_model" not in st.session_state:
+    st.session_state.ai_model = "gpt-4o-mini"
+if "narrator_voice" not in st.session_state:
+    st.session_state.narrator_voice = "coral"
 
-# Header
+# ---------------------------------------------------------
+# Header & Settings Drawer
+# ---------------------------------------------------------
 st.markdown("""
 <div class="header-glow">
   <div class="app-title">🎭 El Pequeño Teatro de las Historias Vivas ✨</div>
-  <div class="app-subtitle">Dibuja una figura en el aire. La IA compone una partitura original en directo para que el teatro la interprete.</div>
+  <div class="app-subtitle">Dibuja una figura en el aire. La IA compone una partitura original y narra tu aventura mientras el teatro cobra vida.</div>
 </div>
 """, unsafe_allow_html=True)
 
-if not st.session_state.api_key:
-    key_input = st.text_input("🔑 OpenAI API Key Requerida:", type="password", placeholder="sk-...")
-    if key_input:
-        st.session_state.api_key = key_input.strip()
-        st.rerun()
+with st.expander("⚙️ Ajustes del Narrador & Conexión", expanded=not bool(st.session_state.api_key)):
+    cfg_col1, cfg_col2, cfg_col3 = st.columns([1.2, 1, 1])
+    with cfg_col1:
+        key_input = st.text_input("OpenAI API Key:", value=st.session_state.api_key, type="password", placeholder="sk-...")
+        if key_input != st.session_state.api_key:
+            st.session_state.api_key = key_input.strip()
+            st.rerun()
+    with cfg_col2:
+        voice_opt = st.selectbox(
+            "Voz del Narrador (HD):",
+            options=["coral", "fable", "onyx", "nova"],
+            index=["coral", "fable", "onyx", "nova"].index(st.session_state.narrator_voice),
+            format_func=lambda x: {
+                "coral": "Coral (Cálida y Expresiva)",
+                "fable": "Fable (Teatral británica)",
+                "onyx": "Onyx (Profunda y Épica)",
+                "nova": "Nova (Luminosa y Vivaz)"
+            }.get(x, x)
+        )
+        st.session_state.narrator_voice = voice_opt
+    with cfg_col3:
+        model_opt = st.selectbox(
+            "Motor de IA:",
+            options=["gpt-4o-mini", "gpt-4o"],
+            index=0 if st.session_state.ai_model == "gpt-4o-mini" else 1,
+            format_func=lambda x: "Ultrarrápido (gpt-4o-mini ~1.5s)" if "mini" in x else "Alta Definición (gpt-4o)"
+        )
+        st.session_state.ai_model = model_opt
 
 component_path = os.path.join(os.path.dirname(__file__), "canvas_component")
 air_canvas = components.declare_component("air_canvas", path=component_path)
@@ -221,7 +262,7 @@ with col_draw:
     canvas_output = air_canvas(default=None, key="air_canvas_ui")
 
 # ---------------------------------------------------------
-# Sequential Storytelling & Live Music Composition Engine
+# Sequential Storytelling & Fast Composition Pipeline
 # ---------------------------------------------------------
 if canvas_output:
     try:
@@ -229,13 +270,13 @@ if canvas_output:
         action_id = data.get("id")
 
         if not st.session_state.api_key:
-            st.error("⚠️ Falta la OpenAI API Key. Ingrésala arriba para continuar.")
+            st.error("⚠️ Ingresa tu OpenAI API Key en los ajustes superiores para despertar la historia.")
         elif action_id and action_id != st.session_state.processed_id:
             cutout_img = data.get("cutout")
             vision_raw = data.get("vision", "")
             base64_data = vision_raw.split(",")[1] if "," in vision_raw else vision_raw
 
-            with st.spinner(f"🎼 Componiendo partitura original y tejiendo el Capítulo {current_chapter_num}..."):
+            with st.spinner(f"🎼 Componiendo partitura y tejiendo el Capítulo {current_chapter_num}..."):
                 client = OpenAI(api_key=st.session_state.api_key)
 
                 history_prompt = ""
@@ -247,40 +288,41 @@ if canvas_output:
                     history_prompt = "Este es el comienzo de una nueva aventura mágica.\n"
 
                 prompt = f"""
-                Eres simultáneamente el Narrador Literario y el Maestro Compositor Musical de un Teatro de Marionetas.
+                Eres simultáneamente el Narrador Dramático y el Maestro Compositor Musical de un Teatro de Marionetas.
                 {history_prompt}
 
                 EL USUARIO ACABA DE DIBUJAR UN NUEVO ELEMENTO EN EL AIRE (mira la imagen adjunta).
 
-                INSTRUCCIONES DE NARRATIVA:
+                INSTRUCCIONES DE NARRATIVA EMOCIONAL:
                 1. Identifica qué criatura u objeto dibujó el usuario.
-                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 3 oraciones). Continuación directa y natural de los capítulos anteriores.
-                3. Asigna un título poético al capítulo (máx. 25 letras).
+                2. Escribe el CAPÍTULO {current_chapter_num} de la historia en ESPAÑOL (2 a 3 oraciones ricas en expresividad). Continuación fluida de los capítulos previos.
+                3. MODULACIÓN VOCAL RICA: Usa signos de puntuación dramática (puntos suspensivos '...' para misterio, exclamaciones '¡!', guiones largos '—' para pausas solemnes, comas fluidas) para que la voz modulada exprese emoción viva, asombro y matices.
+                4. Asigna un título poético (máx. 25 letras).
 
-                INSTRUCCIONES DE COMPOSICIÓN MUSICAL (PARTITURA ORIGINAL EXCLUSIVA):
-                4. Bautiza la pieza musical con un título temático (ej: "Danza del Viento", "Nana de la Luna", "Marcha del Heroe", "Sinfonia del Bosque").
-                5. Define el carácter emocional de la música.
-                6. COMPÓN UNA MELODÍA ORIGINAL Y ARMÓNICA de 10 a 14 notas musicales.
-                   REGLA OBLIGATORIA DE ARMONÍA (Para que suene como una hermosa cajita de música cálida, NUNCA ruido chillón):
-                   - Usa EXCLUSIVAMENTE notas cálidas de la escala pentatónica en frecuencias estándar:
+                INSTRUCCIONES DE COMPOSICIÓN MUSICAL (PARTITURA ORIGINAL):
+                5. Bautiza la pieza musical con un título evocador (ej: "Danza del Viento", "Nana de la Luna", "Marcha de las Estrellas").
+                6. Carácter emocional breve (ej: "Lírico y Soñador", "Misterioso", "Jovial").
+                7. COMPÓN UNA MELODÍA ARMÓNICA Y REAL de 8 a 14 notas musicales.
+                   REGLA OBLIGATORIA DE FRECUENCIAS (Cajita de música cálida, tonos graves y medios, NUNCA chirridos agudos):
+                   - Usa EXCLUSIVAMENTE notas afinadas de la escala pentatónica:
                      G3: 196 Hz | A3: 220 Hz | B3: 247 Hz | C4: 262 Hz | D4: 294 Hz | E4: 330 Hz | F4: 349 Hz | G4: 392 Hz | A4: 440 Hz | C5: 523 Hz
-                     (Usa 0 para silencios/pausas rítmicas indispensables).
-                   - Duraciones en ms: 180 (rápida), 280 (media), 450 (reposo/final).
-                   - Crea un motivo melódico reconocible con inicio, desarrollo y reposo final en la tónica (C4=262 o G3=196).
+                     (Usa 0 para silencios y pausas rítmicas indispensables).
+                   - Duraciones en ms: 180 (ligera), 280 (media), 450 (nota reposada final).
+                   - Concluye la melodía reposando en la tónica (C4: 262 o G3: 196).
 
-                7. Parámetros del escenario físico:
-                   - sky_rgb: [R, G, B] color del arco superior.
-                   - foot_rgb: [R, G, B] color de las candilejas de suelo.
+                8. Parámetros del escenario mecánico:
+                   - sky_rgb: [R, G, B] color del cielo/arco superior.
+                   - foot_rgb: [R, G, B] color cálido de las candilejas de suelo.
                    - intensity: brillo de 65 a 90.
-                   - prop: elevación del atrezo (40 para terrestres, 90 para caminantes, 140 para voladores).
+                   - prop: elevación del atrezo (40 para rastreros, 90 para caminantes, 140 para voladores/mágicos).
 
                 Responde ÚNICAMENTE en JSON con esta estructura:
                 {{
                   "entity": "nombre del elemento",
                   "title": "Título del Capítulo",
-                  "story_spanish": "Cuento en español...",
+                  "story_spanish": "Cuento en español con puntuación expresiva...",
                   "score_title": "Nombre de la Canción",
-                  "score_mood": "Carácter emocional de la música",
+                  "score_mood": "Carácter emocional",
                   "sky_rgb": [90, 40, 220],
                   "foot_rgb": [255, 170, 50],
                   "intensity": 85,
@@ -289,7 +331,7 @@ if canvas_output:
                     {{"f": 262, "d": 280}},
                     {{"f": 330, "d": 280}},
                     {{"f": 392, "d": 450}},
-                    {{"f": 0, "d": 80}},
+                    {{"f": 0, "d": 90}},
                     {{"f": 440, "d": 260}},
                     {{"f": 392, "d": 260}},
                     {{"f": 330, "d": 450}}
@@ -297,19 +339,20 @@ if canvas_output:
                 }}
                 """
 
+                # Light-speed inference
                 completion = client.chat.completions.create(
-                    model="gpt-4o",
+                    model=st.session_state.ai_model,
                     response_format={"type": "json_object"},
                     messages=[
                         {
                             "role": "system",
-                            "content": "Eres un narrador de cuentos infantiles y compositor musical para teatro mecánico. Siempre respondes en formato JSON válido."
+                            "content": "Eres un narrador de cuentos teatrales expresivo y compositor musical. Respondes exclusivamente en formato JSON válido."
                         },
                         {
                             "role": "user",
                             "content": [
                                 {"type": "text", "text": prompt},
-                                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_data}"}}
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_data}"}}
                             ]
                         }
                     ]
@@ -329,11 +372,11 @@ if canvas_output:
                 clean_json = match.group(0) if match else raw_content.strip()
                 chapter_data = json.loads(clean_json)
 
-                # Narration Audio Synthesis
+                # High-Fidelity Voice Synthesis (tts-1-hd with voice modulation)
                 story_text = chapter_data.get("story_spanish", "Había una vez una figura mágica que cobró vida.")
                 tts = client.audio.speech.create(
-                    model="tts-1",
-                    voice="nova",
+                    model="tts-1-hd",
+                    voice=st.session_state.narrator_voice,
                     input=story_text
                 )
                 audio_bytes = tts.content
@@ -347,7 +390,7 @@ if canvas_output:
                     "num": current_chapter_num,
                     "title": chapter_data.get("title", f"Capítulo {current_chapter_num}"),
                     "score_title": chapter_data.get("score_title", "Melodía Mágica"),
-                    "score_mood": chapter_data.get("score_mood", "En cantador"),
+                    "score_mood": chapter_data.get("score_mood", "Encantador"),
                     "entity": chapter_data.get("entity", "Creación mágica"),
                     "text": story_text,
                     "cutout": cutout_img,
@@ -364,7 +407,6 @@ if canvas_output:
                     "melody": chapter_data.get("melody", [])
                 }
 
-                # Deliver the new score directly to Wokwi
                 send_stage_cue(stage_payload)
                 st.rerun()
 
@@ -431,8 +473,10 @@ with col_stage:
         latest = st.session_state.story_chapters[-1]
         st.markdown(f"""
         <div class="story-card">
-          <div class="chapter-badge">Capítulo {latest['num']} &bull; {latest['entity']}</div>
-          <div class="music-badge">🎼 {latest.get('score_title', 'Partitura')} ({latest.get('score_mood', 'Mágico')})</div>
+          <div>
+            <span class="chapter-badge">Capítulo {latest['num']} &bull; {latest['entity']}</span>
+            <span class="music-badge">🎼 {latest.get('score_title', 'Partitura')} ({latest.get('score_mood', 'Mágico')})</span>
+          </div>
           <div class="story-heading">{latest['title']}</div>
           <div class="story-body">{latest['text']}</div>
         </div>
